@@ -3,11 +3,13 @@
 
 #include <stdio.h>
 #include <curl/curl.h>
-#include <curl/easy.h>
+
+extern int gargc;
+extern char **gargv;
 
 extern CURL *curl;
 extern CURLcode res;
 
-extern char checkpackageversions(void);
+extern void checkpackageversions(void);
 
 #endif

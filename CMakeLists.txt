@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 project(chkpkgver)
 set(SOURCES
 	src/main.c
-	src/getpkginfo.c
 	src/getpkgver.c
 )
 include_directories(src)
