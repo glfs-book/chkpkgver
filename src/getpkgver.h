@@ -4,12 +4,9 @@
 #include <stdio.h>
 #include <curl/curl.h>
 
-extern int gargc;
-extern char **gargv;
+extern int g_argc;
+extern char **g_argv;
 
-extern CURL *curl;
-extern CURLcode res;
-
-extern void checkpackageversions(void);
+extern void check_package_versions(void);
 
 #endif

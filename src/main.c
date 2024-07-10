@@ -4,12 +4,12 @@
 #include <curl/curl.h>
 #include "getpkgver.h"
 
-int gargc;
-char **gargv;
+int g_argc;
+char **g_argv;
 
 int main(int argc, char *argv[]) {
-	gargc = argc;
-	gargv = argv;
+	g_argc = argc;
+	g_argv = argv;
 	
 	if(argc < 2) {
 		printf("Usage: <args> /path/to/packages.ent\n");
@@ -36,17 +36,17 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("Checking if %s is valid... ", argv[argc - 1]);
-	FILE *testpackages_ent = fopen(argv[argc - 1], "r");
-	if(!testpackages_ent) {
+	FILE *test_packages_ent = fopen(argv[argc - 1], "r");
+	if(!test_packages_ent) {
 		printf("no, error opening file (does it exist?)\n");
 		return 1;
 	}
-	char testpackages_entbuffer[1024];
+	char test_packages_ent_buffer[1024];
 	int found = 0;
-	while(fgets(testpackages_entbuffer, 1024, testpackages_ent)) {
-		testpackages_entbuffer[strcspn(testpackages_entbuffer, "\n")] = '\0';
-		if (strstr(testpackages_entbuffer, "version") != NULL) {
-			fclose(testpackages_ent);
+	while(fgets(test_packages_ent_buffer, 1024, test_packages_ent)) {
+		test_packages_ent_buffer[strcspn(test_packages_ent_buffer, "\n")] = '\0';
+		if (strstr(test_packages_ent_buffer, "version") != NULL) {
+			fclose(test_packages_ent);
 			found = 1;
 			break;
 		}
@@ -79,10 +79,14 @@ int main(int argc, char *argv[]) {
 		printf("no, cURL failed to startup\n");
 		return 1;
 	}
-
-	checkpackageversions();
-
 	curl_easy_cleanup(curl);
+
+	printf("Test checking done\n");
+	printf("Checking versions of packages...\n");
+	printf("This will take a while...\n\n");
+	check_package_versions();
+	printf("Done");
+
 	curl_global_cleanup();
 	return 0;
 }
