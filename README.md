@@ -7,6 +7,10 @@ not ideal. The current solution also relies on a Bash script but can
 grow unmaintainable. It doesn't scale well.
 
 # Building, Installation, and Use
+Dependencies:
+- cURL
+- libxml2
+
 To build the project, simply do:
 ```Bash
 cmake . && make
