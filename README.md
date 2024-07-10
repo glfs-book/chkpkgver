@@ -8,8 +8,9 @@ grow unmaintainable. It doesn't scale well.
 
 # Building, Installation, and Use
 Dependencies:
+- pkg-config / pkgconf
 - cURL
-- libxml2
+- PCRE2
 
 To build the project, simply do:
 ```Bash

@@ -2,6 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
+
 #include <curl/curl.h>
 #include "getpkgver.h"
 
@@ -43,8 +47,7 @@ int parse_packages_ent(const char *filepath, Entity *entities, int max_entities)
 	memmove(entities[entity_count].value, entities[entity_count].value + 1, len - 1);
 	}
 	entity_count++;
-	}
-	}
+	} }
 	fclose(file);
 	expand_entities(entities, entity_count);
 	return entity_count;
@@ -55,12 +58,12 @@ void clean_entity(char *entity) {
 	char *src = entity;
 	char *dst = clean_entity_char;
 	while(*src) {
-		if(isdigit(*src) || *src == '.') {
+		if(isdigit(*src) || *src == '.' || *src == '_') {
 			*dst++ = *src;
 		}
 		src++;
 	}
-	strcpy(entity,clean_entity_char);
+	strcpy(entity, clean_entity_char);
 }
 
 size_t write_callback(void *ptr, size_t size, size_t nmemb, void *stream) {
@@ -69,12 +72,67 @@ size_t write_callback(void *ptr, size_t size, size_t nmemb, void *stream) {
 	return total_size;
 }
 
-void parse_version_html(char *temp_ver, char *new_ver) {
-	strcpy(new_ver, "aaa");
+int compare_versions(const char *v1, const char *v2) {
+	int num1 = 0, num2 = 0;
+	while (*v1 || *v2) {
+		if (*v1 == '.' || *v2 == '.') {
+			if (*v1 == '.') v1++;
+			if (*v2 == '.') v2++;
+		} else {
+			if (*v1) num1 = num1 * 10 + (*v1 - '0');
+			if (*v2) num2 = num2 * 10 + (*v2 - '0');
+			if (*v1 && *v1 != '.') v1++;
+			if (*v2 && *v2 != '.') v2++;
+		}
+		if (num1 != num2) return num1 - num2;
+		num1 = num2 = 0;
+	}
+	return num1 - num2;
 }
 
-void parse_info_html(char *temp_info, char *new_info) {
-	strcpy(new_info, "aaa");
+void extract_version_html(const char *version_url, char *temp_ver, char *new_ver) {
+	pcre2_code *regex;
+	PCRE2_SIZE erroffset;
+	int errorcode;
+	const char *pattern;
+	if(version_url == "https://archive.mozilla.org/pub/nspr/releases/") {
+		pattern = "([0-4]+\\.[0-3]+[0-9]+)";
+	} else if (version_url == "https://archive.mozilla.org/pub/security/nss/releases/") {
+		pattern = "([0-9]+\\_[0-9]+[0-9]+[0-9]+)";
+	} else {
+		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
+	}
+	regex = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED,
+		0, &errorcode, &erroffset, NULL);
+	if(regex == NULL) {
+		PCRE2_UCHAR buffer[256];
+		pcre2_get_error_message(errorcode, buffer, sizeof(buffer));
+		fprintf(stderr, "Could not compile regex: %s\n", (char *)buffer);
+	}
+	PCRE2_SIZE subject_length = strlen(temp_ver);
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(regex, NULL);
+	PCRE2_SIZE start_offset = 0;
+	int rc;
+	while ((rc = pcre2_match(regex, (PCRE2_SPTR)temp_ver, subject_length,
+		start_offset, 0, match_data, NULL)) >= 0) {
+		PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+		PCRE2_SIZE match_start = ovector[0];
+		PCRE2_SIZE match_end = ovector[1];
+		PCRE2_SIZE match_size = match_end - match_start;
+		char version[100];
+		strncpy(version, temp_ver + match_start, match_size);
+		version[match_size] = '\0';
+		if (new_ver[0] == '\0' || strcmp(version, new_ver) > 0) {
+			//printf("DEBUG: Newer version: %s\n", version);
+			strcpy(new_ver, version);
+		}
+		start_offset = match_end;
+	}
+	pcre2_match_data_free(match_data);
+	pcre2_code_free(regex);
+}
+
+void extract_info_html(char *temp_info, char *new_info) {
 }
 
 void fetch_latest_version_and_changelog(const char *version_url, const char *info_url, char *latest_version, char *changelog) {
@@ -95,6 +153,7 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 				curl_easy_strerror(resfetch));
 			return;
 		}
+		temp_ver[99999] = '\0';
 		if(info_url != NULL) {
 			curl_easy_setopt(curlfetch, CURLOPT_URL, info_url);
 			curl_easy_setopt(curlfetch, CURLOPT_WRITEDATA, temp_info);
@@ -107,9 +166,10 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 			return;
 			}
 		}
-		parse_version_html(temp_ver, latest_version);
-		latest_version[1024 - 1] = '\0';
-		parse_info_html(temp_info, changelog);
+		temp_info[99999] = '\0';
+		extract_version_html(version_url, temp_ver, latest_version);
+		latest_version[100 - 1] = '\0';
+		extract_info_html(temp_info, changelog);
 		changelog[4096 - 1] = '\0';
 		curl_easy_cleanup(curlfetch);
 	}
@@ -137,7 +197,9 @@ void process_pkg_info(const char *pkg, const char *entity_keyword, const char *v
 		} else {
 			printf("  There is no changelog with this release.\n");
 		}
+		printf("\n");
 	}
+	strcpy(latest_version, "0.0.0");
 }
 
 void check_package_versions(void) {
@@ -145,6 +207,14 @@ void check_package_versions(void) {
 	char changelog[4096] = {0};
 	process_pkg_info("libtasn1", "libtasn1-version",
 		"https://ftp.gnu.org/gnu/libtasn1/",
-		"https://gitlab.com/gnutls/libtasn1/-/raw/master/NEWS",
+		NULL,
+		latest_version, changelog);
+	process_pkg_info("NSPR", "nspr-version",
+		"https://archive.mozilla.org/pub/nspr/releases/",
+		NULL,
+		latest_version, changelog);
+	process_pkg_info("NSS", "nss-dir",
+		"https://archive.mozilla.org/pub/security/nss/releases/",
+		NULL,
 		latest_version, changelog);
 }

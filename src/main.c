@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
 	printf("Checking versions of packages...\n");
 	printf("This will take a while...\n\n");
 	check_package_versions();
-	printf("Done");
+	printf("Done\n");
 
 	curl_global_cleanup();
 	return 0;
