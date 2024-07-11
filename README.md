@@ -8,9 +8,10 @@ grow unmaintainable. It doesn't scale well.
 
 # Building, Installation, and Use
 Dependencies:
-- pkg-config / pkgconf
-- cURL
-- PCRE2
+- pkg-config / pkgconf (for detecting libraries and header file locations)
+- cURL                 (for downloading pages)
+- PCRE2                (For extracting versions)
+- JSON-C               (finding latest tags from Github)
 
 To build the project, simply do:
 ```Bash

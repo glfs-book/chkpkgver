@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <curl/curl.h>
+
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
 
-#include <curl/curl.h>
+#include <json-c/json.h>
+
 #include "getpkgver.h"
 
 #define BUFFERLEN 1024
@@ -94,8 +97,10 @@ const char *version_dictionary(const char *version_url) {
 	const char *pattern;
 	if(version_url == "https://archive.mozilla.org/pub/nspr/releases/") {
 		pattern = "([0-4]+\\.[0-3]+[0-9]+)";
-	} else if (version_url == "https://archive.mozilla.org/pub/security/nss/releases/") {
+	} else if(version_url == "https://archive.mozilla.org/pub/security/nss/releases/") {
 		pattern = "([0-9]+\\_[0-9]+[0-9]+[0-9]+)";
+	} else if(version_url == "https://api.github.com/repos/lfs-book/make-ca/releases/latest") {
+		pattern = "([0-9]+\\.[0-9]+)";	
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
@@ -137,12 +142,33 @@ void extract_version_html(const char *version_url, char *temp_ver, char *new_ver
 	pcre2_code_free(regex);
 }
 
+void extract_version_github(const char *version_url, char *temp_ver, char *new_ver) {
+	//printf("Debug: JSON:\n%s", temp_ver);
+	char new_temp[200000] = {0};
+	struct json_object *s_json_obj;
+	struct json_object *tag_name;
+	s_json_obj = json_tokener_parse(temp_ver);
+	if(s_json_obj == NULL) {
+		fprintf(stderr, "Cannot parse JSON... did it download?\n");
+	} else {
+		if (json_object_object_get_ex(s_json_obj, "tag_name", &tag_name)) {
+		//printf("DEBUG: tag name: %s\n", json_object_get_string(tag_name));
+		strcpy(new_temp, json_object_get_string(tag_name));
+		} else {
+		fprintf(stderr, "Tag name not found in JSON...\n");
+		}
+		json_object_put(s_json_obj);
+	}
+	extract_version_html(version_url, new_temp, new_ver);
+	//printf("DEBUG: new version: %s\n", new_ver);
+}
+
 void extract_info_html(char *temp_info, char *new_info) {
 }
 
 void fetch_latest_version_and_changelog(const char *version_url, const char *info_url, char *latest_version, char *changelog) {
-	char temp_ver[100000] = {0};
-	char temp_info[100000] = {0};
+	char temp_ver[200000] = {0};
+	char temp_info[200000] = {0};
 	CURL *curlfetch;
 	CURLcode resfetch;
 	curlfetch = curl_easy_init();
@@ -151,6 +177,7 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 		curl_easy_setopt(curlfetch, CURLOPT_WRITEFUNCTION, write_callback);
 		curl_easy_setopt(curlfetch, CURLOPT_WRITEDATA, temp_ver);
 		curl_easy_setopt(curlfetch, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(curlfetch, CURLOPT_USERAGENT, "chkpkgver/pre-0.5");
 		resfetch = curl_easy_perform(curlfetch);
 		if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", version_url);
@@ -158,11 +185,12 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 				curl_easy_strerror(resfetch));
 			return;
 		}
-		temp_ver[99999] = '\0';
+		temp_ver[199999] = '\0';
 		if(info_url != NULL) {
 			curl_easy_setopt(curlfetch, CURLOPT_URL, info_url);
 			curl_easy_setopt(curlfetch, CURLOPT_WRITEDATA, temp_info);
 			curl_easy_setopt(curlfetch, CURLOPT_FOLLOWLOCATION, 1L);
+			curl_easy_setopt(curlfetch, CURLOPT_USERAGENT, "chkpkgver/pre-0.5");
 			resfetch = curl_easy_perform(curlfetch);
 			if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", info_url);
@@ -171,8 +199,13 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 			return;
 			}
 		}
-		temp_info[99999] = '\0';
-		extract_version_html(version_url, temp_ver, latest_version);
+		temp_info[199999] = '\0';
+	if(version_url == "https://api.github.com/repos/p11-glue/p11-kit/releases/latest" ||
+	version_url == "https://api.github.com/repos/lfs-book/make-ca/releases/latest") {
+			extract_version_github(version_url, temp_ver, latest_version);
+		} else {
+			extract_version_html(version_url, temp_ver, latest_version);
+		}
 		latest_version[100 - 1] = '\0';
 		extract_info_html(temp_info, changelog);
 		changelog[4096 - 1] = '\0';
@@ -219,5 +252,11 @@ void check_package_versions(void) {
 		NULL);
 	process_pkg_info("NSS", "nss-dir",
 		"https://archive.mozilla.org/pub/security/nss/releases/",
+		NULL);
+	process_pkg_info("p11-kit", "p11-kit-version",
+		"https://api.github.com/repos/p11-glue/p11-kit/releases/latest",
+		NULL);
+	process_pkg_info("make-ca", "make-ca-version",
+		"https://api.github.com/repos/lfs-book/make-ca/releases/latest",
 		NULL);
 }
