@@ -90,10 +90,7 @@ int compare_versions(const char *v1, const char *v2) {
 	return num1 - num2;
 }
 
-void extract_version_html(const char *version_url, char *temp_ver, char *new_ver) {
-	pcre2_code *regex;
-	PCRE2_SIZE erroffset;
-	int errorcode;
+const char *version_dictionary(const char *version_url) {
 	const char *pattern;
 	if(version_url == "https://archive.mozilla.org/pub/nspr/releases/") {
 		pattern = "([0-4]+\\.[0-3]+[0-9]+)";
@@ -102,6 +99,14 @@ void extract_version_html(const char *version_url, char *temp_ver, char *new_ver
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
+	return pattern;
+}
+
+void extract_version_html(const char *version_url, char *temp_ver, char *new_ver) {
+	pcre2_code *regex;
+	PCRE2_SIZE erroffset;
+	int errorcode;
+	const char *pattern = version_dictionary(version_url);
 	regex = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED,
 		0, &errorcode, &erroffset, NULL);
 	if(regex == NULL) {
