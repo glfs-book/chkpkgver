@@ -101,13 +101,86 @@ const char *version_dictionary(const char *version_url) {
 		pattern = "([0-9]+\\_[0-9]+[0-9]+[0-9]+)";
 	} else if(version_url == "https://api.github.com/repos/lfs-book/make-ca/releases/latest") {
 		pattern = "([0-9]+\\.[0-9]+)";	
+	} else if(version_url == "https://ftp.gnu.org/gnu/libunistring/") {
+		pattern = "([0-1]+\\.[0-9]+)";
+	} else if(version_url == "https://ftp.gnu.org/gnu/wget/" ||
+		version_url == "https://www.kernel.org/pub/software/scm/git/") {
+		pattern = "([0-9]+\\.[0-7]+[0-9]\\.[0-9]+)";
+	} else if(version_url == "https://www.alsa-project.org/files/pub/lib/" ||
+		version_url == "https://www.alsa-project.org/files/pub/plugins/" ||
+		version_url == "https://www.alsa-project.org/files/pub/utils/") {
+		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
 	return pattern;
 }
 
+void take_out_data_sizes(char *temp) {
+	const char *pattern = "[0-9]+\\.[0-9]+M";
+	pcre2_code *regex;
+	PCRE2_SIZE erroffset;
+	int errorcode;
+	regex = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED, 0,
+		&errorcode, &erroffset, NULL);
+	if (regex == NULL) {
+		PCRE2_UCHAR buffer[256];
+		pcre2_get_error_message(errorcode, buffer, sizeof(buffer));
+		fprintf(stderr, "Could not compile regex: %s\n", (char *)buffer);
+	}
+	PCRE2_SIZE subject_length = strlen(temp);
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(regex, NULL);
+	PCRE2_SIZE start_offset = 0;
+	int rc;
+	while ((rc = pcre2_match(regex, (PCRE2_SPTR)temp, subject_length, start_offset, 0,
+		match_data, NULL)) >= 0) {
+		PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+		PCRE2_SIZE match_start = ovector[0];
+		PCRE2_SIZE match_end = ovector[1];
+		memmove(temp + match_start, temp + match_end, subject_length - match_end + 1);
+		subject_length -= (match_end - match_start);
+		start_offset = match_start;
+	}
+	pcre2_match_data_free(match_data);
+	pcre2_code_free(regex);
+}
+
+void take_out_conflicts(char *temp_ver, char *new_ver) {
+	char *line;
+	char **buffer;
+	int line_count = 0;
+	buffer = malloc(200000 * sizeof(char *));
+	if(buffer == NULL) {
+		fprintf(stderr, "Cannot allocate memory\n");
+	}
+	line = strtok(temp_ver, "\n");
+	while(line != NULL) {
+		buffer[line_count] = malloc(20000 * sizeof(char));
+		if(buffer[line_count] == NULL) {
+			fprintf(stderr, "Cannot allocate memory\n");
+		}
+		strncpy(buffer[line_count++], line, 20000 - 1);
+		buffer[line_count - 1][20000 - 1] = '\0';
+		line = strtok(NULL, "\n");
+	}
+	new_ver[0] = '\0';
+	for(int i = 0; i < line_count; i++) {
+		take_out_data_sizes(buffer[i]);
+		if(strstr(buffer[i], "Apache") == NULL &&
+			strstr(buffer[i], "DOCTYPE") == NULL &&
+			strstr(buffer[i], "topology") == NULL &&
+			strstr(buffer[i], "ucm-conf") == NULL) {
+			strcat(new_ver, buffer[i]);
+			strcat(new_ver, "\n");
+		}
+		free(buffer[i]);
+	}
+	free(buffer);
+}
+
 void extract_version_html(const char *version_url, char *temp_ver, char *new_ver) {
+	char new_temp[200000] = {0};
+	take_out_conflicts(temp_ver, new_temp);
 	pcre2_code *regex;
 	PCRE2_SIZE erroffset;
 	int errorcode;
@@ -119,18 +192,18 @@ void extract_version_html(const char *version_url, char *temp_ver, char *new_ver
 		pcre2_get_error_message(errorcode, buffer, sizeof(buffer));
 		fprintf(stderr, "Could not compile regex: %s\n", (char *)buffer);
 	}
-	PCRE2_SIZE subject_length = strlen(temp_ver);
+	PCRE2_SIZE subject_length = strlen(new_temp);
 	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(regex, NULL);
 	PCRE2_SIZE start_offset = 0;
 	int rc;
-	while ((rc = pcre2_match(regex, (PCRE2_SPTR)temp_ver, subject_length,
+	while ((rc = pcre2_match(regex, (PCRE2_SPTR)new_temp, subject_length,
 		start_offset, 0, match_data, NULL)) >= 0) {
 		PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
 		PCRE2_SIZE match_start = ovector[0];
 		PCRE2_SIZE match_end = ovector[1];
 		PCRE2_SIZE match_size = match_end - match_start;
 		char version[100];
-		strncpy(version, temp_ver + match_start, match_size);
+		strncpy(version, new_temp + match_start, match_size);
 		version[match_size] = '\0';
 		if (new_ver[0] == '\0' || strcmp(version, new_ver) > 0) {
 			//printf("DEBUG: Newer version: %s\n", version);
@@ -201,7 +274,8 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 		}
 		temp_info[199999] = '\0';
 	if(version_url == "https://api.github.com/repos/p11-glue/p11-kit/releases/latest" ||
-	version_url == "https://api.github.com/repos/lfs-book/make-ca/releases/latest") {
+	version_url == "https://api.github.com/repos/lfs-book/make-ca/releases/latest" ||
+	version_url == "https://api.github.com/repos/rockdaboot/libpsl/releases/latest") {
 			extract_version_github(version_url, temp_ver, latest_version);
 		} else {
 			extract_version_html(version_url, temp_ver, latest_version);
@@ -214,6 +288,7 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 }
 
 void process_pkg_info(const char *pkg, const char *entity_keyword, const char *version_url, const char *info_url) {
+	printf("DEBUG: Fetching %s...\n", pkg);
 	Entity entities[100] = {0};
 	char old_version[100] = {0};
 	char latest_version[100] = {0};
@@ -258,5 +333,32 @@ void check_package_versions(void) {
 		NULL);
 	process_pkg_info("make-ca", "make-ca-version",
 		"https://api.github.com/repos/lfs-book/make-ca/releases/latest",
+		NULL);
+	process_pkg_info("libunistring", "libunistring-version",
+		"https://ftp.gnu.org/gnu/libunistring/",
+		NULL);
+	process_pkg_info("libidn2", "libidn2-version",
+		"https://ftp.gnu.org/gnu/libidn/",
+		NULL);
+	process_pkg_info("libpsl", "libpsl-version",
+		"https://api.github.com/repos/rockdaboot/libpsl/releases/latest",
+		NULL);
+	process_pkg_info("cURL", "curl-version",
+		"https://curl.se/download/",
+		NULL);
+	process_pkg_info("Wget", "wget-version",
+		"https://ftp.gnu.org/gnu/wget/",
+		NULL);
+	process_pkg_info("git", "git-version",
+		"https://www.kernel.org/pub/software/scm/git/",
+		NULL);
+	process_pkg_info("alsa-lib", "alsa-lib-version",
+		"https://www.alsa-project.org/files/pub/lib/",
+		NULL);
+	process_pkg_info("alsa-plugins", "alsa-plugins-version",
+		"https://www.alsa-project.org/files/pub/plugins/",
+		NULL);
+	process_pkg_info("alsa-utils", "alsa-utils-version",
+		"https://www.alsa-project.org/files/pub/utils/",
 		NULL);
 }
