@@ -180,9 +180,11 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 	}
 }
 
-void process_pkg_info(const char *pkg, const char *entity_keyword, const char *version_url, const char *info_url, char *latest_version, char *changelog) {
+void process_pkg_info(const char *pkg, const char *entity_keyword, const char *version_url, const char *info_url) {
 	Entity entities[100] = {0};
 	char old_version[100] = {0};
+	char latest_version[100] = {0};
+	char changelog[4096] = {0};
 	int entity_count = parse_packages_ent(g_argv[g_argc - 1], entities, 100);
 	for(int i = 0; i < entity_count; i++) {
 		if (strcmp(entities[i].name, entity_keyword) == 0) {
@@ -204,7 +206,6 @@ void process_pkg_info(const char *pkg, const char *entity_keyword, const char *v
 		}
 		printf("\n");
 	}
-	strcpy(latest_version, "0.0.0");
 }
 
 void check_package_versions(void) {
@@ -212,14 +213,11 @@ void check_package_versions(void) {
 	char changelog[4096] = {0};
 	process_pkg_info("libtasn1", "libtasn1-version",
 		"https://ftp.gnu.org/gnu/libtasn1/",
-		NULL,
-		latest_version, changelog);
+		NULL);
 	process_pkg_info("NSPR", "nspr-version",
 		"https://archive.mozilla.org/pub/nspr/releases/",
-		NULL,
-		latest_version, changelog);
+		NULL);
 	process_pkg_info("NSS", "nss-dir",
 		"https://archive.mozilla.org/pub/security/nss/releases/",
-		NULL,
-		latest_version, changelog);
+		NULL);
 }
