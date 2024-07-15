@@ -288,24 +288,24 @@ void fetch_latest_version_and_changelog(const char *version_url, const char *inf
 	}
 }
 
-void process_pkg_info(const char *pkg, const char *entity_keyword, const char *version_url, const char *info_url) {
-	printf("DEBUG: Fetching %s...\n", pkg);
+void process_pkg_info(const char *pkg[4]) {
+	printf("DEBUG: Fetching %s...\n", pkg[0]);
 	Entity entities[100] = {0};
 	char old_version[100] = {0};
 	char latest_version[100] = {0};
 	char changelog[4096] = {0};
 	int entity_count = parse_packages_ent(g_argv[g_argc - 1], entities, 100);
 	for(int i = 0; i < entity_count; i++) {
-		if (strcmp(entities[i].name, entity_keyword) == 0) {
+		if (strcmp(entities[i].name, pkg[1]) == 0) {
 			strncpy(old_version, entities[i].value, 100 - 1);
 			old_version[100 - 1] = '\0';
 			break;
 		}
 	}
 	clean_entity(old_version);
-	fetch_latest_version_and_changelog(version_url, info_url, latest_version, changelog);
+	fetch_latest_version_and_changelog(pkg[2], pkg[3], latest_version, changelog);
 	if (strcmp(old_version, latest_version) != 0) {
-		printf("%s:\n", pkg);
+		printf("%s:\n", pkg[0]);
 		printf("  Old version: %s\n", old_version);
 		printf("  New version: %s\n", latest_version);
 		if (changelog[0] != '\0') {
@@ -320,46 +320,18 @@ void process_pkg_info(const char *pkg, const char *entity_keyword, const char *v
 void check_package_versions(void) {
 	char latest_version[100] = {0};
 	char changelog[4096] = {0};
-	process_pkg_info("libtasn1", "libtasn1-version",
-		"https://ftp.gnu.org/gnu/libtasn1/",
-		NULL);
-	process_pkg_info("NSPR", "nspr-version",
-		"https://archive.mozilla.org/pub/nspr/releases/",
-		NULL);
-	process_pkg_info("NSS", "nss-dir",
-		"https://archive.mozilla.org/pub/security/nss/releases/",
-		NULL);
-	process_pkg_info("p11-kit", "p11-kit-version",
-		"https://api.github.com/repos/p11-glue/p11-kit/releases/latest",
-		NULL);
-	process_pkg_info("make-ca", "make-ca-version",
-		"https://api.github.com/repos/lfs-book/make-ca/releases/latest",
-		NULL);
-	process_pkg_info("libunistring", "libunistring-version",
-		"https://ftp.gnu.org/gnu/libunistring/",
-		NULL);
-	process_pkg_info("libidn2", "libidn2-version",
-		"https://ftp.gnu.org/gnu/libidn/",
-		NULL);
-	process_pkg_info("libpsl", "libpsl-version",
-		"https://api.github.com/repos/rockdaboot/libpsl/releases/latest",
-		NULL);
-	process_pkg_info("cURL", "curl-version",
-		"https://curl.se/download/",
-		NULL);
-	process_pkg_info("Wget", "wget-version",
-		"https://ftp.gnu.org/gnu/wget/",
-		NULL);
-	process_pkg_info("git", "git-version",
-		"https://www.kernel.org/pub/software/scm/git/",
-		NULL);
-	process_pkg_info("alsa-lib", "alsa-lib-version",
-		"https://www.alsa-project.org/files/pub/lib/",
-		NULL);
-	process_pkg_info("alsa-plugins", "alsa-plugins-version",
-		"https://www.alsa-project.org/files/pub/plugins/",
-		NULL);
-	process_pkg_info("alsa-utils", "alsa-utils-version",
-		"https://www.alsa-project.org/files/pub/utils/",
-		NULL);
+	process_pkg_info(pkg_libtasn1);
+	process_pkg_info(pkg_NSPR);
+	process_pkg_info(pkg_NSS);
+	process_pkg_info(pkg_p11_kit);
+	process_pkg_info(pkg_make_ca);
+	process_pkg_info(pkg_libunistring);
+	process_pkg_info(pkg_libidn2);
+	process_pkg_info(pkg_libpsl);
+	process_pkg_info(pkg_cURL);
+	process_pkg_info(pkg_Wget);
+	process_pkg_info(pkg_git);
+	process_pkg_info(pkg_alsa_lib);
+	process_pkg_info(pkg_alsa_plugins);
+	process_pkg_info(pkg_alsa_utils);
 }
