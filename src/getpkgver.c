@@ -94,23 +94,25 @@ int compare_versions(const char *v1, const char *v2) {
 	return num1 - num2;
 }
 
-const char *version_dictionary(const char *version_url) {
+const char *version_dictionary(const char *pkg[4]) {
 	const char *pattern;
-	if(version_url == "https://archive.mozilla.org/pub/nspr/releases/") {
+	if(pkg[0] == "NSPR") {
 		pattern = "([0-4]+\\.[0-3]+[0-9]+)";
-	} else if(version_url == "https://archive.mozilla.org/pub/security/nss/releases/") {
+	} else if(pkg[0] == "NSS") {
 		pattern = "([0-9]+\\_[0-9]+[0-9]+[0-9]+)";
-	} else if(version_url == "https://api.github.com/repos/lfs-book/make-ca/releases/latest") {
+	} else if(pkg[0] == "make-ca") {
 		pattern = "([0-9]+\\.[0-9]+)";	
-	} else if(version_url == "https://ftp.gnu.org/gnu/libunistring/") {
+	} else if(pkg[0] == "libunistring") {
 		pattern = "([0-1]+\\.[0-9]+)";
-	} else if(version_url == "https://ftp.gnu.org/gnu/wget/" ||
-		version_url == "https://www.kernel.org/pub/software/scm/git/") {
+	} else if(pkg[0] == "Wget" ||
+		pkg[0] == "git") {
 		pattern = "([0-9]+\\.[0-7]+[0-9]\\.[0-9]+)";
-	} else if(version_url == "https://www.alsa-project.org/files/pub/lib/" ||
-		version_url == "https://www.alsa-project.org/files/pub/plugins/" ||
-		version_url == "https://www.alsa-project.org/files/pub/utils/") {
+	} else if(pkg[0] == "alsa-lib" ||
+		pkg[0] == "alsa-plugins" ||
+		pkg[0] == "alsa-utils") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
+	} else if (pkg[0] == "pulseaudio") {
+		pattern = "([1-5]+[0-9]\\.[0-9]+)";
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
@@ -170,7 +172,8 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 		if(strstr(buffer[i], "Apache") == NULL &&
 			strstr(buffer[i], "DOCTYPE") == NULL &&
 			strstr(buffer[i], "topology") == NULL &&
-			strstr(buffer[i], "ucm-conf") == NULL) {
+			strstr(buffer[i], "ucm-conf") == NULL &&
+			strstr(buffer[i], "vorbis-tools") == NULL) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
 		}
@@ -179,13 +182,13 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 	free(buffer);
 }
 
-void extract_version_html(const char *version_url, char *temp_ver, char *new_ver) {
+void extract_version_html(const char *pkg[4], char *temp_ver, char *new_ver) {
 	char new_temp[200000] = {0};
 	take_out_conflicts(temp_ver, new_temp);
 	pcre2_code *regex;
 	PCRE2_SIZE erroffset;
 	int errorcode;
-	const char *pattern = version_dictionary(version_url);
+	const char *pattern = version_dictionary(pkg);
 	regex = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED,
 		0, &errorcode, &erroffset, NULL);
 	if(regex == NULL) {
@@ -216,7 +219,7 @@ void extract_version_html(const char *version_url, char *temp_ver, char *new_ver
 	pcre2_code_free(regex);
 }
 
-void extract_version_github(const char *version_url, char *temp_ver, char *new_ver) {
+void extract_version_github(const char *pkg[4], char *temp_ver, char *new_ver) {
 	//printf("Debug: JSON:\n%s", temp_ver);
 	char new_temp[200000] = {0};
 	struct json_object *s_json_obj;
@@ -233,7 +236,7 @@ void extract_version_github(const char *version_url, char *temp_ver, char *new_v
 		}
 		json_object_put(s_json_obj);
 	}
-	extract_version_html(version_url, new_temp, new_ver);
+	extract_version_html(pkg, new_temp, new_ver);
 	//printf("DEBUG: new version: %s\n", new_ver);
 }
 
@@ -276,10 +279,11 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 		temp_info[199999] = '\0';
 	if(pkg[0] == "p11-kit" ||
 	pkg[0] == "make-ca" ||
-	pkg[0] == "libpsl") {
-			extract_version_github(pkg[2], temp_ver, latest_version);
+	pkg[0] == "libpsl" ||
+	pkg[0] == "libsndfile") {
+			extract_version_github(pkg, temp_ver, latest_version);
 		} else {
-			extract_version_html(pkg[2], temp_ver, latest_version);
+			extract_version_html(pkg, temp_ver, latest_version);
 		}
 		latest_version[100 - 1] = '\0';
 		extract_info_html(temp_info, changelog);
@@ -341,5 +345,11 @@ void check_package_versions(void) {
 	process_pkg_info(pkg_alsa_lib);
 	process_pkg_info(pkg_alsa_plugins);
 	process_pkg_info(pkg_alsa_utils);
+	process_pkg_info(pkg_libogg);
+	process_pkg_info(pkg_libvorbis);
+	process_pkg_info(pkg_flac);
+	process_pkg_info(pkg_opus);
+	process_pkg_info(pkg_libsndfile);
+	process_pkg_info(pkg_pulseaudio);
 	*/
 }

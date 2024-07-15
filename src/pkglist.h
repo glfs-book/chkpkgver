@@ -65,3 +65,27 @@ const char *pkg_alsa_utils[4] = { "alsa-utils", "alsa-utils-version",
 	"https://www.alsa-project.org/files/pub/utils/",
 	"\0"
 };
+const char *pkg_libogg[4] = { "libogg", "libogg-version",
+	"https://downloads.xiph.org/releases/ogg/",
+	"\0"
+};
+const char *pkg_libvorbis[4] = { "libvorbis", "libvorbis-version",
+	"https://downloads.xiph.org/releases/vorbis/",
+	"\0"
+};
+const char *pkg_flac[4] = { "FLAC", "flac-version",
+	"https://downloads.xiph.org/releases/flac/",
+	"\0"
+};
+const char *pkg_opus[4] = { "Opus", "opus-version",
+	"https://downloads.xiph.org/releases/opus/",
+	"\0"
+};
+const char *pkg_libsndfile[4] = { "libsndfile", "libsndfile-version",
+	"https://api.github.com/repos/libsndfile/libsndfile/releases/latest",
+	"\0"
+};
+const char *pkg_pulseaudio[4] = { "pulseaudio", "pulseaudio-version",
+	"https://www.freedesktop.org/software/pulseaudio/releases/",
+	"\0"
+};
