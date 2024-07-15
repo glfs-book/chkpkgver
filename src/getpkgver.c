@@ -111,7 +111,7 @@ const char *version_dictionary(const char *pkg[4]) {
 		pkg[0] == "alsa-plugins" ||
 		pkg[0] == "alsa-utils") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
-	} else if (pkg[0] == "pulseaudio") {
+	} else if (pkg[0] == "PulseAudio") {
 		pattern = "([1-5]+[0-9]\\.[0-9]+)";
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
@@ -350,6 +350,16 @@ void check_package_versions(void) {
 	process_pkg_info(pkg_flac);
 	process_pkg_info(pkg_opus);
 	process_pkg_info(pkg_libsndfile);
-	process_pkg_info(pkg_pulseaudio);
+	process_pkg_info(pkg_PulseAudio);
+	*/
+	/*
+	printf("WARNING - checking Xorg Libraries is not available...\n");
+	printf("WARNING - checking AMDGPU PRO is not available...\n");
+	printf("WARNING - checking libva is not available...\n");
+	printf("WARNING - checking libvdpau is not available...\n");
+	printf("WARNING - checking libvdpau-va-gl is not available...\n");
+	printf("WARNING - checking Xorg Applications is not available...\n");
+	printf("WARNING - checking Xorg Fonts is not available...\n");
+	printf("WARNING - checking Xorg Input Drivers is not available...\n");
 	*/
 }
