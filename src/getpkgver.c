@@ -11,6 +11,7 @@
 #include <json-c/json.h>
 
 #include "getpkgver.h"
+#include "pkglist.c"
 
 #define BUFFERLEN 1024
 
