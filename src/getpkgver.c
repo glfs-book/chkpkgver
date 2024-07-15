@@ -240,46 +240,46 @@ void extract_version_github(const char *version_url, char *temp_ver, char *new_v
 void extract_info_html(char *temp_info, char *new_info) {
 }
 
-void fetch_latest_version_and_changelog(const char *version_url, const char *info_url, char *latest_version, char *changelog) {
+void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version, char *changelog) {
 	char temp_ver[200000] = {0};
 	char temp_info[200000] = {0};
 	CURL *curlfetch;
 	CURLcode resfetch;
 	curlfetch = curl_easy_init();
 	if(curlfetch) {
-		curl_easy_setopt(curlfetch, CURLOPT_URL, version_url);
+		curl_easy_setopt(curlfetch, CURLOPT_URL, pkg[2]);
 		curl_easy_setopt(curlfetch, CURLOPT_WRITEFUNCTION, write_callback);
 		curl_easy_setopt(curlfetch, CURLOPT_WRITEDATA, temp_ver);
 		curl_easy_setopt(curlfetch, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(curlfetch, CURLOPT_USERAGENT, "chkpkgver/pre-0.5");
+		curl_easy_setopt(curlfetch, CURLOPT_USERAGENT, "chkpkgver/pre-0.6");
 		resfetch = curl_easy_perform(curlfetch);
 		if (resfetch != CURLE_OK) {
-			printf("Read from: %s but failed...", version_url);
+			printf("Read from: %s but failed...", pkg[2]);
 			fprintf(stderr, "%s\n",
 				curl_easy_strerror(resfetch));
 			return;
 		}
 		temp_ver[199999] = '\0';
-		if(info_url != NULL) {
-			curl_easy_setopt(curlfetch, CURLOPT_URL, info_url);
+		if(pkg[3] != "\0") {
+			curl_easy_setopt(curlfetch, CURLOPT_URL, pkg[3]);
 			curl_easy_setopt(curlfetch, CURLOPT_WRITEDATA, temp_info);
 			curl_easy_setopt(curlfetch, CURLOPT_FOLLOWLOCATION, 1L);
-			curl_easy_setopt(curlfetch, CURLOPT_USERAGENT, "chkpkgver/pre-0.5");
+			curl_easy_setopt(curlfetch, CURLOPT_USERAGENT, "chkpkgver/pre-0.6");
 			resfetch = curl_easy_perform(curlfetch);
 			if (resfetch != CURLE_OK) {
-			printf("Read from: %s but failed...", info_url);
+			printf("Read from: %s but failed...", pkg[3]);
 			fprintf(stderr, "%s\n",
 				curl_easy_strerror(resfetch));
 			return;
 			}
 		}
 		temp_info[199999] = '\0';
-	if(version_url == "https://api.github.com/repos/p11-glue/p11-kit/releases/latest" ||
-	version_url == "https://api.github.com/repos/lfs-book/make-ca/releases/latest" ||
-	version_url == "https://api.github.com/repos/rockdaboot/libpsl/releases/latest") {
-			extract_version_github(version_url, temp_ver, latest_version);
+	if(pkg[0] == "p11-kit" ||
+	pkg[0] == "make-ca" ||
+	pkg[0] == "libpsl") {
+			extract_version_github(pkg[2], temp_ver, latest_version);
 		} else {
-			extract_version_html(version_url, temp_ver, latest_version);
+			extract_version_html(pkg[2], temp_ver, latest_version);
 		}
 		latest_version[100 - 1] = '\0';
 		extract_info_html(temp_info, changelog);
@@ -303,7 +303,10 @@ void process_pkg_info(const char *pkg[4]) {
 		}
 	}
 	clean_entity(old_version);
-	fetch_latest_version_and_changelog(pkg[2], pkg[3], latest_version, changelog);
+	fetch_latest_version_and_changelog(pkg, latest_version, changelog);
+	//printf("DEBUG: %s:\n", pkg[0]);
+	//printf("DEBUG:  Old version: %s\n", old_version);
+	//printf("DEBUG:  New version: %s\n", latest_version);
 	if (strcmp(old_version, latest_version) != 0) {
 		printf("%s:\n", pkg[0]);
 		printf("  Old version: %s\n", old_version);
@@ -320,6 +323,10 @@ void process_pkg_info(const char *pkg[4]) {
 void check_package_versions(void) {
 	char latest_version[100] = {0};
 	char changelog[4096] = {0};
+	/* STATUS: */
+	/* WORKING */
+	// Commented out to focus on new packages
+	/*
 	process_pkg_info(pkg_libtasn1);
 	process_pkg_info(pkg_NSPR);
 	process_pkg_info(pkg_NSS);
@@ -334,4 +341,5 @@ void check_package_versions(void) {
 	process_pkg_info(pkg_alsa_lib);
 	process_pkg_info(pkg_alsa_plugins);
 	process_pkg_info(pkg_alsa_utils);
+	*/
 }
