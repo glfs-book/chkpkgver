@@ -109,10 +109,20 @@ const char *version_dictionary(const char *pkg[4]) {
 		pattern = "([0-9]+\\.[0-7]+[0-9]\\.[0-9]+)";
 	} else if(pkg[0] == "alsa-lib" ||
 		pkg[0] == "alsa-plugins" ||
-		pkg[0] == "alsa-utils") {
+		pkg[0] == "alsa-utils" ||
+		pkg[0] == "libXau") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
-	} else if (pkg[0] == "PulseAudio") {
+	} else if(pkg[0] == "PulseAudio") {
 		pattern = "([1-5]+[0-9]\\.[0-9]+)";
+	} else if(pkg[0] == "util-macros" ||
+		pkg[0] == "libxcb" ||
+		pkg[0] == "xcb-proto" ||
+		pkg[0] == "Fontconfig") {
+		pattern = "([0-9]+\\.[0-9]+[0-9]+\\.[0-9]+)";
+	} else if(pkg[0] == "xorgproto") {
+		pattern = "([0-9]+[0-9]+[0-9]+[0-9]+\\.[0-9]+)";
+	} else if(pkg[0] == "Which") {
+		pattern = "([0-9]+\\.[0-9]+[0-9]+)";
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
@@ -152,7 +162,7 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 	char *line;
 	char **buffer;
 	int line_count = 0;
-	buffer = malloc(200000 * sizeof(char *));
+	buffer = malloc(500000 * sizeof(char *));
 	if(buffer == NULL) {
 		fprintf(stderr, "Cannot allocate memory\n");
 	}
@@ -183,7 +193,7 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 }
 
 void extract_version_html(const char *pkg[4], char *temp_ver, char *new_ver) {
-	char new_temp[200000] = {0};
+	char new_temp[500000] = {0};
 	take_out_conflicts(temp_ver, new_temp);
 	pcre2_code *regex;
 	PCRE2_SIZE erroffset;
@@ -221,7 +231,7 @@ void extract_version_html(const char *pkg[4], char *temp_ver, char *new_ver) {
 
 void extract_version_github(const char *pkg[4], char *temp_ver, char *new_ver) {
 	//printf("Debug: JSON:\n%s", temp_ver);
-	char new_temp[200000] = {0};
+	char new_temp[500000] = {0};
 	struct json_object *s_json_obj;
 	struct json_object *tag_name;
 	s_json_obj = json_tokener_parse(temp_ver);
@@ -244,8 +254,8 @@ void extract_info_html(char *temp_info, char *new_info) {
 }
 
 void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version, char *changelog) {
-	char temp_ver[200000] = {0};
-	char temp_info[200000] = {0};
+	char temp_ver[500000] = {0};
+	char temp_info[500000] = {0};
 	CURL *curlfetch;
 	CURLcode resfetch;
 	curlfetch = curl_easy_init();
@@ -262,7 +272,7 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 				curl_easy_strerror(resfetch));
 			return;
 		}
-		temp_ver[199999] = '\0';
+		temp_ver[499999] = '\0';
 		if(pkg[3] != "\0") {
 			curl_easy_setopt(curlfetch, CURLOPT_URL, pkg[3]);
 			curl_easy_setopt(curlfetch, CURLOPT_WRITEDATA, temp_info);
@@ -276,7 +286,7 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 			return;
 			}
 		}
-		temp_info[199999] = '\0';
+		temp_info[499999] = '\0';
 	if(pkg[0] == "p11-kit" ||
 	pkg[0] == "make-ca" ||
 	pkg[0] == "libpsl" ||
@@ -327,8 +337,6 @@ void process_pkg_info(const char *pkg[4]) {
 void check_package_versions(void) {
 	char latest_version[100] = {0};
 	char changelog[4096] = {0};
-	/* STATUS: */
-	/* WORKING */
 	// Commented out to focus on new packages
 	/*
 	process_pkg_info(pkg_libtasn1);
@@ -351,15 +359,23 @@ void check_package_versions(void) {
 	process_pkg_info(pkg_opus);
 	process_pkg_info(pkg_libsndfile);
 	process_pkg_info(pkg_PulseAudio);
+	process_pkg_info(pkg_util_macros);
+	process_pkg_info(pkg_xorgproto);
+	process_pkg_info(pkg_libXau);
+	process_pkg_info(pkg_libXdmcp);
 	*/
+	process_pkg_info(pkg_Python);
+	printf("DEBUG: ^ NOTE ^ ~~ REVAMP VARIABLE RESOLUTION\n");
 	/*
-	printf("WARNING - checking Xorg Libraries is not available...\n");
+	process_pkg_info(pkg_xcb_proto);
+	process_pkg_info(pkg_libxcb);
+	process_pkg_info(pkg_Which);
+	process_pkg_info(pkg_libpng);
+	process_pkg_info(pkg_FreeType);
+	*/
+	process_pkg_info(pkg_harfBuzz);
+	process_pkg_info(pkg_Fontconfig);
+	/*
 	printf("WARNING - checking AMDGPU PRO is not available...\n");
-	printf("WARNING - checking libva is not available...\n");
-	printf("WARNING - checking libvdpau is not available...\n");
-	printf("WARNING - checking libvdpau-va-gl is not available...\n");
-	printf("WARNING - checking Xorg Applications is not available...\n");
-	printf("WARNING - checking Xorg Fonts is not available...\n");
-	printf("WARNING - checking Xorg Input Drivers is not available...\n");
 	*/
 }
