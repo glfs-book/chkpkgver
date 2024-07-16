@@ -110,19 +110,35 @@ const char *version_dictionary(const char *pkg[4]) {
 	} else if(pkg[0] == "alsa-lib" ||
 		pkg[0] == "alsa-plugins" ||
 		pkg[0] == "alsa-utils" ||
-		pkg[0] == "libXau") {
+		pkg[0] == "libXau" ||
+		pkg[0] == "libXpm" ||
+		pkg[0] == "libXaw" ||
+		pkg[0] == "libXrender" ||
+		pkg[0] == "libXv" ||
+		pkg[0] == "libXvMC") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
 	} else if(pkg[0] == "PulseAudio") {
 		pattern = "([1-5]+[0-9]\\.[0-9]+)";
 	} else if(pkg[0] == "util-macros" ||
 		pkg[0] == "libxcb" ||
 		pkg[0] == "xcb-proto" ||
-		pkg[0] == "Fontconfig") {
+		pkg[0] == "Python" ||
+		pkg[0] == "Fontconfig" ||
+		pkg[0] == "libpciaccess" ||
+		pkg[0] == "CMake" ||
+		pkg[0] == "Pixman" ||
+		pkg[0] == "libxml2") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+\\.[0-9]+)";
 	} else if(pkg[0] == "xorgproto") {
 		pattern = "([0-9]+[0-9]+[0-9]+[0-9]+\\.[0-9]+)";
-	} else if(pkg[0] == "Which") {
+	} else if(pkg[0] == "Which" ||
+		pkg[0] == "Nettle" ||
+		pkg[0] == "icu") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+)";
+	} else if(pkg[0] == "libXcomposite") {
+		pattern = "([0]+\\.[0-9]+\\.[0-9]+)";	
+	} else if(pkg[0] == "dbus") {
+		pattern = "([0-9]+\\.[0-9]+[0-9]+\\.[0-9]+\\.[0-9]+)";	
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
@@ -183,7 +199,8 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 			strstr(buffer[i], "DOCTYPE") == NULL &&
 			strstr(buffer[i], "topology") == NULL &&
 			strstr(buffer[i], "ucm-conf") == NULL &&
-			strstr(buffer[i], "vorbis-tools") == NULL) {
+			strstr(buffer[i], "vorbis-tools") == NULL &&
+			strstr(buffer[i], "tanuki-shape") == NULL) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
 		}
@@ -290,7 +307,8 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 	if(pkg[0] == "p11-kit" ||
 	pkg[0] == "make-ca" ||
 	pkg[0] == "libpsl" ||
-	pkg[0] == "libsndfile") {
+	pkg[0] == "libsndfile" ||
+	pkg[0] == "HarfBuzz") {
 			extract_version_github(pkg, temp_ver, latest_version);
 		} else {
 			extract_version_html(pkg, temp_ver, latest_version);
@@ -310,7 +328,7 @@ void process_pkg_info(const char *pkg[4]) {
 	char changelog[4096] = {0};
 	int entity_count = parse_packages_ent(g_argv[g_argc - 1], entities, 100);
 	for(int i = 0; i < entity_count; i++) {
-		if (strcmp(entities[i].name, pkg[1]) == 0) {
+		if(strcmp(entities[i].name, pkg[1]) == 0) {
 			strncpy(old_version, entities[i].value, 100 - 1);
 			old_version[100 - 1] = '\0';
 			break;
@@ -321,11 +339,14 @@ void process_pkg_info(const char *pkg[4]) {
 	//printf("DEBUG: %s:\n", pkg[0]);
 	//printf("DEBUG:  Old version: %s\n", old_version);
 	//printf("DEBUG:  New version: %s\n", latest_version);
-	if (strcmp(old_version, latest_version) != 0) {
+	if(strcmp(old_version, latest_version) != 0) {
 		printf("%s:\n", pkg[0]);
 		printf("  Old version: %s\n", old_version);
 		printf("  New version: %s\n", latest_version);
-		if (changelog[0] != '\0') {
+		if(pkg[0] == "Python") {
+			printf("  3.13 is in beta.\n  Check schedule: https://peps.python.org/pep-0719/\n");
+		}
+		if(changelog[0] != '\0') {
 			printf("  Changelog: %s\n", changelog);
 		} else {
 			printf("  There is no changelog with this release.\n");
@@ -337,8 +358,7 @@ void process_pkg_info(const char *pkg[4]) {
 void check_package_versions(void) {
 	char latest_version[100] = {0};
 	char changelog[4096] = {0};
-	// Commented out to focus on new packages
-	/*
+	// Shared Dependencies - Networking
 	process_pkg_info(pkg_libtasn1);
 	process_pkg_info(pkg_NSPR);
 	process_pkg_info(pkg_NSS);
@@ -350,6 +370,8 @@ void check_package_versions(void) {
 	process_pkg_info(pkg_cURL);
 	process_pkg_info(pkg_Wget);
 	process_pkg_info(pkg_git);
+
+	// Shared Dependencies - Audio
 	process_pkg_info(pkg_alsa_lib);
 	process_pkg_info(pkg_alsa_plugins);
 	process_pkg_info(pkg_alsa_utils);
@@ -359,22 +381,69 @@ void check_package_versions(void) {
 	process_pkg_info(pkg_opus);
 	process_pkg_info(pkg_libsndfile);
 	process_pkg_info(pkg_PulseAudio);
+
+	// Shared Dependencies - Basic X11 Software
 	process_pkg_info(pkg_util_macros);
 	process_pkg_info(pkg_xorgproto);
 	process_pkg_info(pkg_libXau);
 	process_pkg_info(pkg_libXdmcp);
-	*/
 	process_pkg_info(pkg_Python);
-	printf("DEBUG: ^ NOTE ^ ~~ REVAMP VARIABLE RESOLUTION\n");
-	/*
 	process_pkg_info(pkg_xcb_proto);
 	process_pkg_info(pkg_libxcb);
 	process_pkg_info(pkg_Which);
 	process_pkg_info(pkg_libpng);
 	process_pkg_info(pkg_FreeType);
-	*/
-	process_pkg_info(pkg_harfBuzz);
+	process_pkg_info(pkg_HarfBuzz);
 	process_pkg_info(pkg_Fontconfig);
+	// Shared Dependencies - Basic X11 Software - X7LIB
+	process_pkg_info(pkg_xtrans);
+	process_pkg_info(pkg_libX11);
+	process_pkg_info(pkg_libXext);
+	process_pkg_info(pkg_libFS);
+	process_pkg_info(pkg_libICE);
+	process_pkg_info(pkg_libSM);
+	process_pkg_info(pkg_libXScrnSaver);
+	process_pkg_info(pkg_libXt);
+	process_pkg_info(pkg_libXmu);
+	process_pkg_info(pkg_libXpm);
+	process_pkg_info(pkg_libXaw);
+	process_pkg_info(pkg_libXfixes);
+	process_pkg_info(pkg_libXcomposite);
+	process_pkg_info(pkg_libXrender);
+	process_pkg_info(pkg_libXcursor);
+	process_pkg_info(pkg_libXdamage);
+	process_pkg_info(pkg_libfontenc);
+	process_pkg_info(pkg_libXfont2);
+	process_pkg_info(pkg_libXft);
+	process_pkg_info(pkg_libXi);
+	process_pkg_info(pkg_libXinerama);
+	process_pkg_info(pkg_libXrandr);
+	process_pkg_info(pkg_libXres);
+	process_pkg_info(pkg_libXtst);
+	process_pkg_info(pkg_libXv);
+	process_pkg_info(pkg_libXvMC);
+	process_pkg_info(pkg_libXxf86dga);
+	process_pkg_info(pkg_libXxf86vm);
+	process_pkg_info(pkg_libpciaccess);
+	process_pkg_info(pkg_libxkbfile);
+	process_pkg_info(pkg_libxshmfence);
+	process_pkg_info(pkg_libXpresent);
+	// Shared Dependencies - Basic X11 Software - Continued ...
+	process_pkg_info(pkg_libxcvt);
+	process_pkg_info(pkg_CMake);
+	printf("WARNING - checking dbus is not available...\n");
+	printf("          Check https://gitlab.freedesktop.org/dbus/dbus/-/tags\n");
+	printf("          for newer releases. Their versioning is weird...\n");
+	//process_pkg_info(pkg_dbus);
+	process_pkg_info(pkg_libunwind);
+	process_pkg_info(pkg_Nettle);
+	process_pkg_info(pkg_GnuTLS);
+	process_pkg_info(pkg_Pixman);
+	printf("WARNING - checking icu is not available...\n");
+	printf("          Check https://github.com/unicode-org/icu/tags\n");
+	printf("          for newer releases.\n");
+	//process_pkg_info(pkg_icu);
+	process_pkg_info(pkg_libxml2);
 	/*
 	printf("WARNING - checking AMDGPU PRO is not available...\n");
 	*/
