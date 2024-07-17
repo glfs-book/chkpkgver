@@ -22,8 +22,8 @@ typedef struct {
 } Entity;
 
 typedef struct {
-	const char *pkg[4];
-	CURL *curl;
+	const char* pkg[4];
+	CURL* curl;
 	char latest_version[100];
 	char changelog[4096];
 } ThreadArgs;
@@ -31,31 +31,31 @@ typedef struct {
 pthread_mutex_t lock;
 
 // fuck indentation
-void expand_entities(Entity *entities, int entity_count) {
-	for(int i = 0; i < entity_count; i++) {
-		for(int j = 0; j < entity_count; j++) {
-		char *pos = strstr(entities[i].value, entities[j].name);
-		if(pos) {
+void expand_entities(Entity* entities, int entity_count) {
+	for (int i = 0; i < entity_count; i++) {
+		for (int j = 0; j < entity_count; j++) {
+		char* pos = strstr(entities[i].value, entities[j].name);
+		if (pos) {
 		char expanded_value[100];
 		snprintf(expanded_value, 100, "%.*s%s%s",
 		(int)(pos - entities[i].value), entities[i].value,
 		entities[j].value, pos + strlen(entities[j].name));
 		strcpy(entities[i].value, expanded_value);
-		} // if(pos) {
-		} // for(int j = 0; j < entity_count; j++) {
+		}
+		}
 	}
 }
 
 // again, fuck it
-int parse_packages_ent(const char *filepath, Entity *entities, int max_entities) {
-	FILE *file = fopen(filepath, "r");
+int parse_packages_ent(const char* filepath, Entity* entities, int max_entities) {
+	FILE* file = fopen(filepath, "r");
 	char line[BUFFERLEN];
 	int entity_count = 0;
-	while(fgets(line, sizeof(line), file) && entity_count < max_entities) {
-	if(sscanf(line, "<!ENTITY %99s %99[^\n]>",
+	while (fgets(line, sizeof(line), file) && entity_count < max_entities) {
+	if (sscanf(line, "<!ENTITY %99s %99[^\n]>",
 	entities[entity_count].name, entities[entity_count].value) == 2) {
 	size_t len = strlen(entities[entity_count].value);
-	if(entities[entity_count].value[0] == '"' &&
+	if (entities[entity_count].value[0] == '"' &&
 	entities[entity_count].value[len - 1] == '"') {
 	entities[entity_count].value[len - 1] = '\0';
 	memmove(entities[entity_count].value, entities[entity_count].value + 1, len - 1);
@@ -67,12 +67,12 @@ int parse_packages_ent(const char *filepath, Entity *entities, int max_entities)
 	return entity_count;
 }
 
-void clean_entity(char *entity) {
+void clean_entity(char* entity) {
 	char clean_entity_char[100] = {0};
-	char *src = entity;
-	char *dst = clean_entity_char;
-	while(*src) {
-		if(isdigit(*src) || *src == '.' || *src == '_') {
+	char* src = entity;
+	char* dst = clean_entity_char;
+	while (*src) {
+		if (isdigit(*src) || *src == '.' || *src == '_') {
 			*dst++ = *src;
 		}
 		src++;
@@ -80,13 +80,13 @@ void clean_entity(char *entity) {
 	strcpy(entity, clean_entity_char);
 }
 
-size_t write_callback(void *ptr, size_t size, size_t nmemb, void *stream) {
+size_t write_callback(void* ptr, size_t size, size_t nmemb, void* stream) {
 	size_t total_size = size * nmemb;
-	strncat((char *)stream, (char *)ptr, total_size);
+	strncat((char*)stream, (char*)ptr, total_size);
 	return total_size;
 }
 
-int compare_versions(const char *v1, const char *v2) {
+int compare_versions(const char* v1, const char* v2) {
 	int num1 = 0, num2 = 0;
 	while (*v1 || *v2) {
 		if (*v1 == '.' || *v2 == '.') {
@@ -104,20 +104,20 @@ int compare_versions(const char *v1, const char *v2) {
 	return num1 - num2;
 }
 
-const char *version_dictionary(const char *pkg[4]) {
-	const char *pattern;
-	if(pkg[0] == "NSPR") {
+const char* version_dictionary(const char* pkg[4]) {
+	const char* pattern;
+	if (pkg[0] == "NSPR") {
 		pattern = "([0-4]+\\.[0-3]+[0-9]+)";
-	} else if(pkg[0] == "NSS") {
+	} else if (pkg[0] == "NSS") {
 		pattern = "([0-9]+\\_[0-9]+[0-9]+[0-9]+)";
-	} else if(pkg[0] == "make-ca") {
+	} else if (pkg[0] == "make-ca") {
 		pattern = "([0-9]+\\.[0-9]+)";	
-	} else if(pkg[0] == "libunistring") {
+	} else if (pkg[0] == "libunistring") {
 		pattern = "([0-1]+\\.[0-9]+)";
-	} else if(pkg[0] == "Wget" ||
+	} else if (pkg[0] == "Wget" ||
 		pkg[0] == "git") {
 		pattern = "([0-9]+\\.[0-7]+[0-9]\\.[0-9]+)";
-	} else if(pkg[0] == "alsa-lib" ||
+	} else if (pkg[0] == "alsa-lib" ||
 		pkg[0] == "alsa-plugins" ||
 		pkg[0] == "alsa-utils" ||
 		pkg[0] == "libXau" ||
@@ -127,9 +127,9 @@ const char *version_dictionary(const char *pkg[4]) {
 		pkg[0] == "libXv" ||
 		pkg[0] == "libXvMC") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
-	} else if(pkg[0] == "PulseAudio") {
+	} else if (pkg[0] == "PulseAudio") {
 		pattern = "([1-5]+[0-9]\\.[0-9]+)";
-	} else if(pkg[0] == "util-macros" ||
+	} else if (pkg[0] == "util-macros" ||
 		pkg[0] == "libxcb" ||
 		pkg[0] == "xcb-proto" ||
 		pkg[0] == "Python" ||
@@ -139,16 +139,16 @@ const char *version_dictionary(const char *pkg[4]) {
 		pkg[0] == "Pixman" ||
 		pkg[0] == "libxml2") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+\\.[0-9]+)";
-	} else if(pkg[0] == "xorgproto") {
+	} else if (pkg[0] == "xorgproto") {
 		pattern = "([0-9]+[0-9]+[0-9]+[0-9]+\\.[0-9]+)";
-	} else if(pkg[0] == "Which" ||
+	} else if (pkg[0] == "Which" ||
 		pkg[0] == "Nettle" ||
 		pkg[0] == "icu" ||
 		pkg[0] == "Wayland-Protocols") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+)";
-	} else if(pkg[0] == "libXcomposite") {
+	} else if (pkg[0] == "libXcomposite") {
 		pattern = "([0]+\\.[0-9]+\\.[0-9]+)";	
-	} else if(pkg[0] == "dbus") {
+	} else if (pkg[0] == "dbus") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+\\.[0-9]+\\.[0-9]+)";	
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
@@ -156,9 +156,9 @@ const char *version_dictionary(const char *pkg[4]) {
 	return pattern;
 }
 
-void take_out_data_sizes(char *temp) {
-	const char *pattern = "[0-9]+\\.[0-9]+M";
-	pcre2_code *regex;
+void take_out_data_sizes(char* temp) {
+	const char* pattern = "[0-9]+\\.[0-9]+M";
+	pcre2_code* regex;
 	PCRE2_SIZE erroffset;
 	int errorcode;
 	regex = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED, 0,
@@ -166,15 +166,15 @@ void take_out_data_sizes(char *temp) {
 	if (regex == NULL) {
 		PCRE2_UCHAR buffer[256];
 		pcre2_get_error_message(errorcode, buffer, sizeof(buffer));
-		fprintf(stderr, "Could not compile regex: %s\n", (char *)buffer);
+		fprintf(stderr, "Could not compile regex: %s\n", (char*)buffer);
 	}
 	PCRE2_SIZE subject_length = strlen(temp);
-	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(regex, NULL);
+	pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(regex, NULL);
 	PCRE2_SIZE start_offset = 0;
 	int rc;
 	while ((rc = pcre2_match(regex, (PCRE2_SPTR)temp, subject_length, start_offset, 0,
 		match_data, NULL)) >= 0) {
-		PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+		PCRE2_SIZE* ovector = pcre2_get_ovector_pointer(match_data);
 		PCRE2_SIZE match_start = ovector[0];
 		PCRE2_SIZE match_end = ovector[1];
 		memmove(temp + match_start, temp + match_end, subject_length - match_end + 1);
@@ -185,18 +185,18 @@ void take_out_data_sizes(char *temp) {
 	pcre2_code_free(regex);
 }
 
-void take_out_conflicts(char *temp_ver, char *new_ver) {
-	char *line;
-	char **buffer;
+void take_out_conflicts(char* temp_ver, char* new_ver) {
+	char* line;
+	char** buffer;
 	int line_count = 0;
-	buffer = malloc(500000 * sizeof(char *));
-	if(buffer == NULL) {
+	buffer = malloc(500000 * sizeof(char*));
+	if (buffer == NULL) {
 		fprintf(stderr, "Cannot allocate memory\n");
 	}
 	line = strtok(temp_ver, "\n");
-	while(line != NULL) {
+	while (line != NULL) {
 		buffer[line_count] = malloc(20000 * sizeof(char));
-		if(buffer[line_count] == NULL) {
+		if (buffer[line_count] == NULL) {
 			fprintf(stderr, "Cannot allocate memory\n");
 		}
 		strncpy(buffer[line_count++], line, 20000 - 1);
@@ -204,9 +204,9 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 		line = strtok(NULL, "\n");
 	}
 	new_ver[0] = '\0';
-	for(int i = 0; i < line_count; i++) {
+	for (int i = 0; i < line_count; i++) {
 		take_out_data_sizes(buffer[i]);
-		if(strstr(buffer[i], "Apache") == NULL &&
+		if (strstr(buffer[i], "Apache") == NULL &&
 			strstr(buffer[i], "DOCTYPE") == NULL &&
 			strstr(buffer[i], "topology") == NULL &&
 			strstr(buffer[i], "ucm-conf") == NULL &&
@@ -223,22 +223,22 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 	//printf("DEBUG: temp_ver, new_ver:\n%s\n%s\n", temp_ver, new_ver);
 }
 
-void extract_version_html(const char *pkg[4], char *temp_ver, char *new_ver) {
+void extract_version_html(const char* pkg[4], char* temp_ver, char* new_ver) {
 	char new_temp[500000] = {0};
 	take_out_conflicts(temp_ver, new_temp);
-	pcre2_code *regex;
+	pcre2_code* regex;
 	PCRE2_SIZE erroffset;
 	int errorcode;
-	const char *pattern = version_dictionary(pkg);
+	const char* pattern = version_dictionary(pkg);
 	regex = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED,
 		0, &errorcode, &erroffset, NULL);
 	if(regex == NULL) {
 		PCRE2_UCHAR buffer[256];
 		pcre2_get_error_message(errorcode, buffer, sizeof(buffer));
-		fprintf(stderr, "Could not compile regex: %s\n", (char *)buffer);
+		fprintf(stderr, "Could not compile regex: %s\n", (char*)buffer);
 	}
 	PCRE2_SIZE subject_length = strlen(new_temp);
-	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(regex, NULL);
+	pcre2_match_data* match_data = pcre2_match_data_create_from_pattern(regex, NULL);
 	PCRE2_SIZE start_offset = 0;
 	int rc;
 	while ((rc = pcre2_match(regex, (PCRE2_SPTR)new_temp, subject_length,
@@ -260,13 +260,13 @@ void extract_version_html(const char *pkg[4], char *temp_ver, char *new_ver) {
 	pcre2_code_free(regex);
 }
 
-void extract_version_github(const char *pkg[4], char *temp_ver, char *new_ver) {
+void extract_version_github(const char* pkg[4], char* temp_ver, char* new_ver) {
 	//printf("Debug: JSON:\n%s", temp_ver);
 	char new_temp[500000] = {0};
-	struct json_object *s_json_obj;
-	struct json_object *tag_name;
+	struct json_object* s_json_obj;
+	struct json_object* tag_name;
 	s_json_obj = json_tokener_parse(temp_ver);
-	if(s_json_obj == NULL) {
+	if (s_json_obj == NULL) {
 		fprintf(stderr, "Cannot parse JSON... did it download?\n");
 	} else {
 		if (json_object_object_get_ex(s_json_obj, "tag_name", &tag_name)) {
@@ -281,15 +281,15 @@ void extract_version_github(const char *pkg[4], char *temp_ver, char *new_ver) {
 	//printf("DEBUG: new version: %s\n", new_ver);
 }
 
-void extract_info_html(char *temp_info, char *new_info) {
+void extract_info_html(char* temp_info, char* new_info) {
 }
 
-void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version, char *changelog, CURL *curl) {
+void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version, char* changelog, CURL* curl) {
 	pthread_mutex_lock(&lock);
 	char temp_ver[500000] = {0};
 	char temp_info[500000] = {0};
 	CURLcode resfetch;
-	if(curl) {
+	if (curl) {
 		curl_easy_setopt(curl, CURLOPT_URL, pkg[2]);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp_ver);
@@ -303,7 +303,7 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 			return;
 		}
 		temp_ver[499999] = '\0';
-		if(pkg[3] != "\0") {
+		if (pkg[3] != "\0") {
 			curl_easy_setopt(curl, CURLOPT_URL, pkg[3]);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp_info);
 			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -317,7 +317,7 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 			}
 		}
 		temp_info[499999] = '\0';
-	if(pkg[0] == "p11-kit" ||
+	if (pkg[0] == "p11-kit" ||
 	pkg[0] == "make-ca" ||
 	pkg[0] == "libpsl" ||
 	pkg[0] == "libsndfile" ||
@@ -334,13 +334,13 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 	curl_easy_cleanup(curl);
 }
 
-void process_pkg_info(const char *pkg[4], CURL *curl, char *latest_version, char *changelog) {
+void process_pkg_info(const char* pkg[4], CURL* curl, char* latest_version, char* changelog) {
 	//printf("DEBUG: Fetching %s...\n", pkg[0]);
 	Entity entities[100] = {0};
 	char old_version[100] = {0};
 	int entity_count = parse_packages_ent(g_argv[g_argc - 1], entities, 100);
-	for(int i = 0; i < entity_count; i++) {
-		if(strcmp(entities[i].name, pkg[1]) == 0) {
+	for (int i = 0; i < entity_count; i++) {
+		if (strcmp(entities[i].name, pkg[1]) == 0) {
 			strncpy(old_version, entities[i].value, 100 - 1);
 			old_version[100 - 1] = '\0';
 			break;
@@ -351,14 +351,14 @@ void process_pkg_info(const char *pkg[4], CURL *curl, char *latest_version, char
 	//printf("DEBUG: %s:\n", pkg[0]);
 	//printf("DEBUG:  Old version: %s\n", old_version);
 	//printf("DEBUG:  New version: %s\n", latest_version);
-	if(strcmp(old_version, latest_version) != 0) {
+	if (strcmp(old_version, latest_version) != 0) {
 		printf("%s:\n", pkg[0]);
 		printf("  Old version: %s\n", old_version);
 		printf("  New version: %s\n", latest_version);
-		if(pkg[0] == "Python") {
+		if (pkg[0] == "Python") {
 			printf("  3.13 is in beta.\n  Check schedule: https://peps.python.org/pep-0719/\n");
 		}
-		if(changelog[0] != '\0') {
+		if (changelog[0] != '\0') {
 			printf("  Changelog: %s\n", changelog);
 		} else {
 			printf("  There is no changelog with this release.\n");
@@ -370,10 +370,10 @@ void process_pkg_info(const char *pkg[4], CURL *curl, char *latest_version, char
 	strcpy(changelog, "\0");
 }
 
-void *thread_function(void *arg) {
-	ThreadArgs *threadArgs = (ThreadArgs *)arg;
+void* thread_function(void* arg) {
+	ThreadArgs* threadArgs = (ThreadArgs*)arg;
 	threadArgs->curl = curl_easy_init();
-	if(!threadArgs->curl) {
+	if (!threadArgs->curl) {
 		fprintf(stderr, "Failed to create cURL handle\n");
 		return NULL;
 	}
@@ -383,14 +383,14 @@ void *thread_function(void *arg) {
 	return NULL;
 }
 
-void copy_package(const char *dest[4], const char *src[4]) {
+void copy_package(const char* dest[4], const char* src[4]) {
 	for (int i = 0; i < 4; i++) {
 		dest[i] = src[i];
 	}
 }
 
 void check_package_versions(void) {
-	const char *packages[][4] = {
+	const char* packages[][4] = {
 		{ "libtasn1", "libtasn1-version",
 			"https://ftp.gnu.org/gnu/libtasn1/",
 			"\0"
@@ -626,21 +626,21 @@ void check_package_versions(void) {
 	ThreadArgs threadArgs[max_threads];
 	int thread_count = 0;
 	pthread_mutex_init(&lock, NULL);
-	for(int i = 0; i < package_count; i++) {
+	for (int i = 0; i < package_count; i++) {
 		copy_package(threadArgs[thread_count].pkg, packages[i]);
 		threadArgs[thread_count].curl = curl_easy_init();
-		if(!threadArgs[thread_count].curl) {
+		if (!threadArgs[thread_count].curl) {
 			fprintf(stderr, "Failed to create cURL handle\n");
 			continue;
 		}
-		if(pthread_create(&threads[thread_count], NULL, thread_function,
+		if (pthread_create(&threads[thread_count], NULL, thread_function,
 			&threadArgs[thread_count]) != 0) {
 			perror("Failed to create thread");
 			curl_easy_cleanup(threadArgs[thread_count].curl);
 			continue;
 		}
 		thread_count++;
-		if(thread_count == max_threads) {
+		if (thread_count == max_threads) {
 			for (int j = 0; j < thread_count; j++) {
 				pthread_join(threads[j], NULL);
 			}
