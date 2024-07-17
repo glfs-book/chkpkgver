@@ -143,7 +143,8 @@ const char *version_dictionary(const char *pkg[4]) {
 		pattern = "([0-9]+[0-9]+[0-9]+[0-9]+\\.[0-9]+)";
 	} else if(pkg[0] == "Which" ||
 		pkg[0] == "Nettle" ||
-		pkg[0] == "icu") {
+		pkg[0] == "icu" ||
+		pkg[0] == "Wayland-Protocols") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+)";
 	} else if(pkg[0] == "libXcomposite") {
 		pattern = "([0]+\\.[0-9]+\\.[0-9]+)";	
@@ -210,7 +211,9 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 			strstr(buffer[i], "topology") == NULL &&
 			strstr(buffer[i], "ucm-conf") == NULL &&
 			strstr(buffer[i], "vorbis-tools") == NULL &&
-			strstr(buffer[i], "tanuki-shape") == NULL) {
+			strstr(buffer[i], "tanuki-shape") == NULL &&
+			strstr(buffer[i], "span class") == NULL &&
+			strstr(buffer[i], "script") == NULL) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
 		}
@@ -291,7 +294,7 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp_ver);
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/pre-0.6");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/pre-0.70");
 		resfetch = curl_easy_perform(curl);
 		if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", pkg[2]);
@@ -304,7 +307,7 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 			curl_easy_setopt(curl, CURLOPT_URL, pkg[3]);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp_info);
 			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/pre-0.6");
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/pre-0.70");
 			resfetch = curl_easy_perform(curl);
 			if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", pkg[3]);
@@ -332,7 +335,7 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 }
 
 void process_pkg_info(const char *pkg[4], CURL *curl, char *latest_version, char *changelog) {
-	printf("DEBUG: Fetching %s...\n", pkg[0]);
+	//printf("DEBUG: Fetching %s...\n", pkg[0]);
 	Entity entities[100] = {0};
 	char old_version[100] = {0};
 	int entity_count = parse_packages_ent(g_argv[g_argc - 1], entities, 100);
@@ -391,132 +394,231 @@ void check_package_versions(void) {
 		{ "libtasn1", "libtasn1-version",
 			"https://ftp.gnu.org/gnu/libtasn1/",
 			"\0"
-		},
-		{ "NSPR", "nspr-version",
+		}, { "NSPR", "nspr-version",
 			"https://archive.mozilla.org/pub/nspr/releases/",
 			"\0"
-		},
-		{ "NSS", "nss-dir",
+		}, { "NSS", "nss-dir",
 			"https://archive.mozilla.org/pub/security/nss/releases/",
 			"\0"
-		},
-		{ "p11-kit", "p11-kit-version",
+		}, { "p11-kit", "p11-kit-version",
 			"https://api.github.com/repos/p11-glue/p11-kit/releases/latest",
 			"\0"
-		},
-		{ "make-ca", "make-ca-version",
+		}, { "make-ca", "make-ca-version",
 			"https://api.github.com/repos/lfs-book/make-ca/releases/latest",
 			"\0"
-		},
-		{ "libunistring", "libunistring-version",
+		}, { "libunistring", "libunistring-version",
 			"https://ftp.gnu.org/gnu/libunistring/",
 			"\0"
-		},
-		{ "libidn2", "libidn2-version",
+		}, { "libidn2", "libidn2-version",
 			"https://ftp.gnu.org/gnu/libidn/",
 			"\0"
-		},
-		{ "libpsl", "libpsl-version",
+		}, { "libpsl", "libpsl-version",
 			"https://api.github.com/repos/rockdaboot/libpsl/releases/latest",
 			"\0"
-		},
-		{ "cURL", "curl-version",
+		}, { "cURL", "curl-version",
 			"https://curl.se/download/",
 			"\0"
-		},
-		{ "Wget", "wget-version",
+		}, { "Wget", "wget-version",
 			"https://ftp.gnu.org/gnu/wget/",
 			"\0"
-		},
-		{ "git", "git-version",
+		}, { "git", "git-version",
 			"https://www.kernel.org/pub/software/scm/git/",
 			"\0"
-		}, /*
-		{ "alsa-lib", "alsa-lib-version",
+		}, { "alsa-lib", "alsa-lib-version",
 			"https://www.alsa-project.org/files/pub/lib/",
 			"\0"
-		},
-		{ "alsa-plugins", "alsa-plugins-version",
+		}, { "alsa-plugins", "alsa-plugins-version",
 			"https://www.alsa-project.org/files/pub/plugins/",
 			"\0"
-		},
-		{ "alsa-utils", "alsa-utils-version",
+		}, { "alsa-utils", "alsa-utils-version",
 			"https://www.alsa-project.org/files/pub/utils/",
 			"\0"
-		}, */
-		{ "libogg", "libogg-version",
+		}, { "libogg", "libogg-version",
 			"https://downloads.xiph.org/releases/ogg/",
 			"\0"
-		},
-		{ "libvorbis", "libvorbis-version",
+		}, { "libvorbis", "libvorbis-version",
 			"https://downloads.xiph.org/releases/vorbis/",
 			"\0"
-		},
-		{ "FLAC", "flac-version",
+		}, { "FLAC", "flac-version",
 			"https://downloads.xiph.org/releases/flac/",
 			"\0"
-		},
-		{ "Opus", "opus-version",
+		}, { "Opus", "opus-version",
 			"https://downloads.xiph.org/releases/opus/",
 			"\0"
-		},
-		{ "libsndfile", "libsndfile-version",
+		}, { "libsndfile", "libsndfile-version",
 			"https://api.github.com/repos/libsndfile/libsndfile/releases/latest",
 			"\0"
-		},
-		{ "PulseAudio", "pulseaudio-version",
+		}, { "PulseAudio", "pulseaudio-version",
 			"https://www.freedesktop.org/software/pulseaudio/releases/",
 			"\0"
-		},
-		{ "util-macros", "util-macros-version",
+		}, { "util-macros", "util-macros-version",
 			"https://gitlab.freedesktop.org/xorg/util/macros/-/tags",
 			"\0"
-		},
-		{ "xorgproto", "xorgproto-version",
+		}, { "xorgproto", "xorgproto-version",
 			"https://gitlab.freedesktop.org/xorg/proto/xorgproto/-/tags",
 			"\0"
-		},
-		{ "libXau", "libXau-version",
+		}, { "libXau", "libXau-version",
 			"https://gitlab.freedesktop.org/xorg/lib/libXau/-/tags",
 			"\0"
-		},
-		{ "libXdmcp", "libXdmcp-version",
+		}, { "libXdmcp", "libXdmcp-version",
 			"https://gitlab.freedesktop.org/xorg/lib/libXdmcp/-/tags",
 			"\0"
-		},
-		{ "Python", "python3-version",
+		}, { "Python", "python3-version",
 			"https://www.python.org/ftp/python/",
 			"\0"
-		},
-		{ "xcb-proto", "xcb-proto-version",
+		}, { "xcb-proto", "xcb-proto-version",
 			"https://gitlab.freedesktop.org/xorg/proto/xcbproto/-/tags",
 			"\0"
-		},
-		{ "libxcb", "libxcb-version",
+		}, { "libxcb", "libxcb-version",
 			"https://gitlab.freedesktop.org/xorg/lib/libxcb/-/tags",
 			"\0"
-		},
-		{ "Which", "which-version",
+		}, { "Which", "which-version",
 			"https://ftp.gnu.org/gnu/which/",
 			"\0"
-		},
-		{ "libpng", "libpng-version",
+		}, { "libpng", "libpng-version",
 			"https://sourceforge.net/projects/libpng/files/",
 			"\0"
-		},
-		{ "FreeType2", "freetype2-version",
+		}, { "FreeType2", "freetype2-version",
 			"https://sourceforge.net/projects/freetype/files/",
 			"\0"
-		},
-		{ "HarfBuzz", "harfbuzz-version",
+		}, { "HarfBuzz", "harfbuzz-version",
 			"https://api.github.com/repos/harfbuzz/harfbuzz/releases/latest",
 			"\0"
-		},
-		{ "Fontconfig", "fontconfig-version",
+		}, { "Fontconfig", "fontconfig-version",
 			"https://www.freedesktop.org/software/fontconfig/release/",
+			"\0"
+		}, { "xtrans", "xtrans-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxtrans/-/tags",
+			"\0"
+		}, { "libX11", "libX11-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libX11/-/tags",
+			"\0"
+		}, { "libXext", "libXext-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXext/-/tags",
+			"\0"
+		}, { "libFS", "libFS-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libFS/-/tags",
+			"\0"
+		}, { "libICE", "libICE-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libICE/-/tags",
+			"\0"
+		}, { "libSM", "libSM-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libSM/-/tags",
+			"\0"
+		}, { "libXScrnSaver", "libXScrnSaver-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXScrnSaver/-/tags",
+			"\0"
+		}, { "libXt", "libXt-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXt/-/tags",
+			"\0"
+		}, { "libXmu", "libXmu-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXmu/-/tags",
+			"\0"
+		}, { "libXpm", "libXpm-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXpm/-/tags",
+			"\0"
+		}, { "libXaw", "libXaw-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXaw/-/tags",
+			"\0"
+		}, { "libXfixes", "libXfixes-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXfixes/-/tags",
+			"\0"
+		}, { "libXcomposite", "libXcomposite-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXcomposite/-/tags",
+			"\0"
+		}, { "libXrender", "libXrender-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXrender/-/tags",
+			"\0"
+		}, { "libXcursor", "libXcursor-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXcursor/-/tags",
+			"\0"
+		}, { "libXdamage", "libXdamage-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXdamage/-/tags",
+			"\0"
+		}, { "libfontenc", "libfontenc-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libfontenc/-/tags",
+			"\0"
+		}, { "libXfont2", "libXfont2-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXfont/-/tags",
+			"\0"
+		}, { "libXft", "libXft-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXft/-/tags",
+			"\0"
+		}, { "libXi", "libXi-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXi/-/tags",
+			"\0"
+		}, { "libXinerama", "libXinerama-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXinerama/-/tags",
+			"\0"
+		}, { "libXrandr", "libXrandr-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXrandr/-/tags",
+			"\0"
+		}, { "libXres", "libXres-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXres/-/tags",
+			"\0"
+		}, { "libXtst", "libXtst-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXtst/-/tags",
+			"\0"
+		}, { "libXv", "libXv-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXv/-/tags",
+			"\0"
+		}, { "libXvMC", "libXvMC-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXvMC/-/tags",
+			"\0"
+		}, { "libXxf86dga", "libXxf86dga-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXxf86dga/-/tags",
+			"\0"
+		}, { "libXxf86vm", "libXxf86vm-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXxf86vm/-/tags",
+			"\0"
+		}, { "libpciaccess", "libpciaccess-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libpciaccess/-/tags",
+			"\0"
+		}, { "libxkbfile", "libxkbfile-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxkbfile/-/tags",
+			"\0"
+		}, { "libxshmfence", "libxshmfence-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxshmfence/-/tags",
+			"\0"
+		}, { "libXpresent", "libXpresent-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXpresent/-/tags",
+			"\0"
+		}, { "libxcvt", "libxcvt-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcvt/-/tags",
+			"\0"
+		}, { "CMake", "cmake-version",
+			"https://cmake.org/download/",
+			"\0"
+		}, { "libunwind", "libunwind-version",
+			"https://download.savannah.nongnu.org/releases/libunwind/",
+			"\0"
+		}, { "Nettle", "nettle-version",
+			"https://ftp.gnu.org/gnu/nettle/",
+			"\0"
+		}, { "GnuTLS", "gnutls-version",
+			"https://gitlab.com/gnutls/gnutls/-/tags",
+			"\0"
+		}, { "Pixman", "pixman-version",
+			"https://gitlab.freedesktop.org/pixman/pixman/-/tags",
+			"\0"
+		}, { "libxml2", "libxml2-version",
+			"https://gitlab.gnome.org/GNOME/libxml2/-/tags",
+			"\0"
+		}, { "Wayland", "wayland-version",
+			"https://gitlab.freedesktop.org/wayland/wayland/-/tags",
+			"\0"
+		}, { "Wayland-Protocols", "wayland-protocols-version",
+			"https://gitlab.freedesktop.org/wayland/wayland-protocols/-/tags",
+			"\0"
+		}, { "seatd", "seatd-version",
+			"https://git.sr.ht/~kennylevinsen/seatd/refs/",
+			"\0"
+		}, { "libglvnd", "libglvnd-version",
+			"https://gitlab.freedesktop.org/glvnd/libglvnd/-/tags",
 			"\0"
 		}
 	};
+	printf("WARNING - Checking dbus and icu cannot be done at the moment.\n\n");
 
 	int package_count = sizeof(packages) / sizeof(packages[0]);
 	int max_threads = sysconf(_SC_NPROCESSORS_ONLN);
