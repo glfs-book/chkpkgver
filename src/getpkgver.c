@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #include <curl/curl.h>
 
@@ -11,7 +13,6 @@
 #include <json-c/json.h>
 
 #include "getpkgver.h"
-#include "pkglist.h"
 
 #define BUFFERLEN 1024
 
@@ -19,6 +20,15 @@ typedef struct {
 	char name[100];
 	char value[100];
 } Entity;
+
+typedef struct {
+	const char *pkg[4];
+	CURL *curl;
+	char latest_version[100];
+	char changelog[4096];
+} ThreadArgs;
+
+pthread_mutex_t lock;
 
 // fuck indentation
 void expand_entities(Entity *entities, int entity_count) {
@@ -207,6 +217,7 @@ void take_out_conflicts(char *temp_ver, char *new_ver) {
 		free(buffer[i]);
 	}
 	free(buffer);
+	//printf("DEBUG: temp_ver, new_ver:\n%s\n%s\n", temp_ver, new_ver);
 }
 
 void extract_version_html(const char *pkg[4], char *temp_ver, char *new_ver) {
@@ -270,19 +281,18 @@ void extract_version_github(const char *pkg[4], char *temp_ver, char *new_ver) {
 void extract_info_html(char *temp_info, char *new_info) {
 }
 
-void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version, char *changelog) {
+void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version, char *changelog, CURL *curl) {
+	pthread_mutex_lock(&lock);
 	char temp_ver[500000] = {0};
 	char temp_info[500000] = {0};
-	CURL *curlfetch;
 	CURLcode resfetch;
-	curlfetch = curl_easy_init();
-	if(curlfetch) {
-		curl_easy_setopt(curlfetch, CURLOPT_URL, pkg[2]);
-		curl_easy_setopt(curlfetch, CURLOPT_WRITEFUNCTION, write_callback);
-		curl_easy_setopt(curlfetch, CURLOPT_WRITEDATA, temp_ver);
-		curl_easy_setopt(curlfetch, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(curlfetch, CURLOPT_USERAGENT, "chkpkgver/pre-0.6");
-		resfetch = curl_easy_perform(curlfetch);
+	if(curl) {
+		curl_easy_setopt(curl, CURLOPT_URL, pkg[2]);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp_ver);
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/pre-0.6");
+		resfetch = curl_easy_perform(curl);
 		if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", pkg[2]);
 			fprintf(stderr, "%s\n",
@@ -291,11 +301,11 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 		}
 		temp_ver[499999] = '\0';
 		if(pkg[3] != "\0") {
-			curl_easy_setopt(curlfetch, CURLOPT_URL, pkg[3]);
-			curl_easy_setopt(curlfetch, CURLOPT_WRITEDATA, temp_info);
-			curl_easy_setopt(curlfetch, CURLOPT_FOLLOWLOCATION, 1L);
-			curl_easy_setopt(curlfetch, CURLOPT_USERAGENT, "chkpkgver/pre-0.6");
-			resfetch = curl_easy_perform(curlfetch);
+			curl_easy_setopt(curl, CURLOPT_URL, pkg[3]);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp_info);
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/pre-0.6");
+			resfetch = curl_easy_perform(curl);
 			if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", pkg[3]);
 			fprintf(stderr, "%s\n",
@@ -316,16 +326,15 @@ void fetch_latest_version_and_changelog(const char *pkg[4], char *latest_version
 		latest_version[100 - 1] = '\0';
 		extract_info_html(temp_info, changelog);
 		changelog[4096 - 1] = '\0';
-		curl_easy_cleanup(curlfetch);
 	}
+	pthread_mutex_unlock(&lock);
+	curl_easy_cleanup(curl);
 }
 
-void process_pkg_info(const char *pkg[4]) {
+void process_pkg_info(const char *pkg[4], CURL *curl, char *latest_version, char *changelog) {
 	printf("DEBUG: Fetching %s...\n", pkg[0]);
 	Entity entities[100] = {0};
 	char old_version[100] = {0};
-	char latest_version[100] = {0};
-	char changelog[4096] = {0};
 	int entity_count = parse_packages_ent(g_argv[g_argc - 1], entities, 100);
 	for(int i = 0; i < entity_count; i++) {
 		if(strcmp(entities[i].name, pkg[1]) == 0) {
@@ -335,7 +344,7 @@ void process_pkg_info(const char *pkg[4]) {
 		}
 	}
 	clean_entity(old_version);
-	fetch_latest_version_and_changelog(pkg, latest_version, changelog);
+	fetch_latest_version_and_changelog(pkg, latest_version, changelog, curl);
 	//printf("DEBUG: %s:\n", pkg[0]);
 	//printf("DEBUG:  Old version: %s\n", old_version);
 	//printf("DEBUG:  New version: %s\n", latest_version);
@@ -353,98 +362,191 @@ void process_pkg_info(const char *pkg[4]) {
 		}
 		printf("\n");
 	}
+	strcpy(old_version, "\0");
+	strcpy(latest_version, "\0");
+	strcpy(changelog, "\0");
+}
+
+void *thread_function(void *arg) {
+	ThreadArgs *threadArgs = (ThreadArgs *)arg;
+	threadArgs->curl = curl_easy_init();
+	if(!threadArgs->curl) {
+		fprintf(stderr, "Failed to create cURL handle\n");
+		return NULL;
+	}
+	process_pkg_info(threadArgs->pkg, threadArgs->curl,
+		threadArgs->latest_version, threadArgs->changelog);
+	curl_easy_cleanup(threadArgs->curl);
+	return NULL;
+}
+
+void copy_package(const char *dest[4], const char *src[4]) {
+	for (int i = 0; i < 4; i++) {
+		dest[i] = src[i];
+	}
 }
 
 void check_package_versions(void) {
-	char latest_version[100] = {0};
-	char changelog[4096] = {0};
-	// Shared Dependencies - Networking
-	process_pkg_info(pkg_libtasn1);
-	process_pkg_info(pkg_NSPR);
-	process_pkg_info(pkg_NSS);
-	process_pkg_info(pkg_p11_kit);
-	process_pkg_info(pkg_make_ca);
-	process_pkg_info(pkg_libunistring);
-	process_pkg_info(pkg_libidn2);
-	process_pkg_info(pkg_libpsl);
-	process_pkg_info(pkg_cURL);
-	process_pkg_info(pkg_Wget);
-	process_pkg_info(pkg_git);
+	const char *packages[][4] = {
+		{ "libtasn1", "libtasn1-version",
+			"https://ftp.gnu.org/gnu/libtasn1/",
+			"\0"
+		},
+		{ "NSPR", "nspr-version",
+			"https://archive.mozilla.org/pub/nspr/releases/",
+			"\0"
+		},
+		{ "NSS", "nss-dir",
+			"https://archive.mozilla.org/pub/security/nss/releases/",
+			"\0"
+		},
+		{ "p11-kit", "p11-kit-version",
+			"https://api.github.com/repos/p11-glue/p11-kit/releases/latest",
+			"\0"
+		},
+		{ "make-ca", "make-ca-version",
+			"https://api.github.com/repos/lfs-book/make-ca/releases/latest",
+			"\0"
+		},
+		{ "libunistring", "libunistring-version",
+			"https://ftp.gnu.org/gnu/libunistring/",
+			"\0"
+		},
+		{ "libidn2", "libidn2-version",
+			"https://ftp.gnu.org/gnu/libidn/",
+			"\0"
+		},
+		{ "libpsl", "libpsl-version",
+			"https://api.github.com/repos/rockdaboot/libpsl/releases/latest",
+			"\0"
+		},
+		{ "cURL", "curl-version",
+			"https://curl.se/download/",
+			"\0"
+		},
+		{ "Wget", "wget-version",
+			"https://ftp.gnu.org/gnu/wget/",
+			"\0"
+		},
+		{ "git", "git-version",
+			"https://www.kernel.org/pub/software/scm/git/",
+			"\0"
+		}, /*
+		{ "alsa-lib", "alsa-lib-version",
+			"https://www.alsa-project.org/files/pub/lib/",
+			"\0"
+		},
+		{ "alsa-plugins", "alsa-plugins-version",
+			"https://www.alsa-project.org/files/pub/plugins/",
+			"\0"
+		},
+		{ "alsa-utils", "alsa-utils-version",
+			"https://www.alsa-project.org/files/pub/utils/",
+			"\0"
+		}, */
+		{ "libogg", "libogg-version",
+			"https://downloads.xiph.org/releases/ogg/",
+			"\0"
+		},
+		{ "libvorbis", "libvorbis-version",
+			"https://downloads.xiph.org/releases/vorbis/",
+			"\0"
+		},
+		{ "FLAC", "flac-version",
+			"https://downloads.xiph.org/releases/flac/",
+			"\0"
+		},
+		{ "Opus", "opus-version",
+			"https://downloads.xiph.org/releases/opus/",
+			"\0"
+		},
+		{ "libsndfile", "libsndfile-version",
+			"https://api.github.com/repos/libsndfile/libsndfile/releases/latest",
+			"\0"
+		},
+		{ "PulseAudio", "pulseaudio-version",
+			"https://www.freedesktop.org/software/pulseaudio/releases/",
+			"\0"
+		},
+		{ "util-macros", "util-macros-version",
+			"https://gitlab.freedesktop.org/xorg/util/macros/-/tags",
+			"\0"
+		},
+		{ "xorgproto", "xorgproto-version",
+			"https://gitlab.freedesktop.org/xorg/proto/xorgproto/-/tags",
+			"\0"
+		},
+		{ "libXau", "libXau-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXau/-/tags",
+			"\0"
+		},
+		{ "libXdmcp", "libXdmcp-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libXdmcp/-/tags",
+			"\0"
+		},
+		{ "Python", "python3-version",
+			"https://www.python.org/ftp/python/",
+			"\0"
+		},
+		{ "xcb-proto", "xcb-proto-version",
+			"https://gitlab.freedesktop.org/xorg/proto/xcbproto/-/tags",
+			"\0"
+		},
+		{ "libxcb", "libxcb-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcb/-/tags",
+			"\0"
+		},
+		{ "Which", "which-version",
+			"https://ftp.gnu.org/gnu/which/",
+			"\0"
+		},
+		{ "libpng", "libpng-version",
+			"https://sourceforge.net/projects/libpng/files/",
+			"\0"
+		},
+		{ "FreeType2", "freetype2-version",
+			"https://sourceforge.net/projects/freetype/files/",
+			"\0"
+		},
+		{ "HarfBuzz", "harfbuzz-version",
+			"https://api.github.com/repos/harfbuzz/harfbuzz/releases/latest",
+			"\0"
+		},
+		{ "Fontconfig", "fontconfig-version",
+			"https://www.freedesktop.org/software/fontconfig/release/",
+			"\0"
+		}
+	};
 
-	// Shared Dependencies - Audio
-	process_pkg_info(pkg_alsa_lib);
-	process_pkg_info(pkg_alsa_plugins);
-	process_pkg_info(pkg_alsa_utils);
-	process_pkg_info(pkg_libogg);
-	process_pkg_info(pkg_libvorbis);
-	process_pkg_info(pkg_flac);
-	process_pkg_info(pkg_opus);
-	process_pkg_info(pkg_libsndfile);
-	process_pkg_info(pkg_PulseAudio);
-
-	// Shared Dependencies - Basic X11 Software
-	process_pkg_info(pkg_util_macros);
-	process_pkg_info(pkg_xorgproto);
-	process_pkg_info(pkg_libXau);
-	process_pkg_info(pkg_libXdmcp);
-	process_pkg_info(pkg_Python);
-	process_pkg_info(pkg_xcb_proto);
-	process_pkg_info(pkg_libxcb);
-	process_pkg_info(pkg_Which);
-	process_pkg_info(pkg_libpng);
-	process_pkg_info(pkg_FreeType);
-	process_pkg_info(pkg_HarfBuzz);
-	process_pkg_info(pkg_Fontconfig);
-	// Shared Dependencies - Basic X11 Software - X7LIB
-	process_pkg_info(pkg_xtrans);
-	process_pkg_info(pkg_libX11);
-	process_pkg_info(pkg_libXext);
-	process_pkg_info(pkg_libFS);
-	process_pkg_info(pkg_libICE);
-	process_pkg_info(pkg_libSM);
-	process_pkg_info(pkg_libXScrnSaver);
-	process_pkg_info(pkg_libXt);
-	process_pkg_info(pkg_libXmu);
-	process_pkg_info(pkg_libXpm);
-	process_pkg_info(pkg_libXaw);
-	process_pkg_info(pkg_libXfixes);
-	process_pkg_info(pkg_libXcomposite);
-	process_pkg_info(pkg_libXrender);
-	process_pkg_info(pkg_libXcursor);
-	process_pkg_info(pkg_libXdamage);
-	process_pkg_info(pkg_libfontenc);
-	process_pkg_info(pkg_libXfont2);
-	process_pkg_info(pkg_libXft);
-	process_pkg_info(pkg_libXi);
-	process_pkg_info(pkg_libXinerama);
-	process_pkg_info(pkg_libXrandr);
-	process_pkg_info(pkg_libXres);
-	process_pkg_info(pkg_libXtst);
-	process_pkg_info(pkg_libXv);
-	process_pkg_info(pkg_libXvMC);
-	process_pkg_info(pkg_libXxf86dga);
-	process_pkg_info(pkg_libXxf86vm);
-	process_pkg_info(pkg_libpciaccess);
-	process_pkg_info(pkg_libxkbfile);
-	process_pkg_info(pkg_libxshmfence);
-	process_pkg_info(pkg_libXpresent);
-	// Shared Dependencies - Basic X11 Software - Continued ...
-	process_pkg_info(pkg_libxcvt);
-	process_pkg_info(pkg_CMake);
-	printf("WARNING - checking dbus is not available...\n");
-	printf("          Check https://gitlab.freedesktop.org/dbus/dbus/-/tags\n");
-	printf("          for newer releases. Their versioning is weird...\n");
-	//process_pkg_info(pkg_dbus);
-	process_pkg_info(pkg_libunwind);
-	process_pkg_info(pkg_Nettle);
-	process_pkg_info(pkg_GnuTLS);
-	process_pkg_info(pkg_Pixman);
-	printf("WARNING - checking icu is not available...\n");
-	printf("          Check https://github.com/unicode-org/icu/tags\n");
-	printf("          for newer releases.\n");
-	//process_pkg_info(pkg_icu);
-	process_pkg_info(pkg_libxml2);
-	/*
-	printf("WARNING - checking AMDGPU PRO is not available...\n");
-	*/
+	int package_count = sizeof(packages) / sizeof(packages[0]);
+	int max_threads = sysconf(_SC_NPROCESSORS_ONLN);
+	pthread_t threads[max_threads];
+	ThreadArgs threadArgs[max_threads];
+	int thread_count = 0;
+	pthread_mutex_init(&lock, NULL);
+	for(int i = 0; i < package_count; i++) {
+		copy_package(threadArgs[thread_count].pkg, packages[i]);
+		threadArgs[thread_count].curl = curl_easy_init();
+		if(!threadArgs[thread_count].curl) {
+			fprintf(stderr, "Failed to create cURL handle\n");
+			continue;
+		}
+		if(pthread_create(&threads[thread_count], NULL, thread_function,
+			&threadArgs[thread_count]) != 0) {
+			perror("Failed to create thread");
+			curl_easy_cleanup(threadArgs[thread_count].curl);
+			continue;
+		}
+		thread_count++;
+		if(thread_count == max_threads) {
+			for (int j = 0; j < thread_count; j++) {
+				pthread_join(threads[j], NULL);
+			}
+			thread_count = 0;
+		}
+	}
+	for (int i = 0; i < thread_count; i++) {
+		pthread_join(threads[i], NULL);
+	}
+	pthread_mutex_destroy(&lock);
 }
