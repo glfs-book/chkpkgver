@@ -14,11 +14,11 @@
 
 #include "getpkgver.h"
 
-#define BUFFERLEN 1024
+#define BUFFERLEN 4096
 
 typedef struct {
-	char name[100];
-	char value[100];
+	char name[1000];
+	char value[1000];
 } Entity;
 
 typedef struct {
@@ -36,8 +36,8 @@ void expand_entities(Entity* entities, int entity_count) {
 		for (int j = 0; j < entity_count; j++) {
 		char* pos = strstr(entities[i].value, entities[j].name);
 		if (pos) {
-		char expanded_value[100];
-		snprintf(expanded_value, 100, "%.*s%s%s",
+		char expanded_value[1000];
+		snprintf(expanded_value, 1000, "%.*s%s%s",
 		(int)(pos - entities[i].value), entities[i].value,
 		entities[j].value, pos + strlen(entities[j].name));
 		strcpy(entities[i].value, expanded_value);
@@ -68,11 +68,11 @@ int parse_packages_ent(const char* filepath, Entity* entities, int max_entities)
 }
 
 void clean_entity(char* entity) {
-	char clean_entity_char[100] = {0};
+	char clean_entity_char[1000] = {0};
 	char* src = entity;
 	char* dst = clean_entity_char;
 	while (*src) {
-		if (isdigit(*src) || *src == '.' || *src == '_') {
+		if (isdigit(*src) || *src == '.' || *src == '_' || *src == '-') {
 			*dst++ = *src;
 		}
 		src++;
@@ -110,7 +110,8 @@ const char* version_dictionary(const char* pkg[4]) {
 		pattern = "([0-4]+\\.[0-3]+[0-9]+)";
 	} else if (pkg[0] == "NSS") {
 		pattern = "([0-9]+\\_[0-9]+[0-9]+[0-9]+)";
-	} else if (pkg[0] == "make-ca") {
+	} else if (pkg[0] == "make-ca" ||
+		pkg[0] == "libvdpau") {
 		pattern = "([0-9]+\\.[0-9]+)";	
 	} else if (pkg[0] == "libunistring") {
 		pattern = "([0-1]+\\.[0-9]+)";
@@ -137,7 +138,11 @@ const char* version_dictionary(const char* pkg[4]) {
 		pkg[0] == "libpciaccess" ||
 		pkg[0] == "CMake" ||
 		pkg[0] == "Pixman" ||
-		pkg[0] == "libxml2") {
+		pkg[0] == "libxml2" ||
+		pkg[0] == "pciutils" ||
+		pkg[0] == "Rustc" ||
+		pkg[0] == "Cbindgen" ||
+		pkg[0] == "rust-bindgen") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+\\.[0-9]+)";
 	} else if (pkg[0] == "xorgproto") {
 		pattern = "([0-9]+[0-9]+[0-9]+[0-9]+\\.[0-9]+)";
@@ -147,9 +152,24 @@ const char* version_dictionary(const char* pkg[4]) {
 		pkg[0] == "Wayland-Protocols") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+)";
 	} else if (pkg[0] == "libXcomposite") {
-		pattern = "([0]+\\.[0-9]+\\.[0-9]+)";	
+		pattern = "([0]+\\.[0-9]+\\.[0-9]+)";
+	} else if (pkg[0] == "glslang" ||
+		pkg[0] == "SPIRV-LLVM-Translator") {
+		pattern = "([0-9]+[0-9]+\\.[0-9]+\\.[0-9]+)";
+	} else if (pkg[0] == "Vulkan-Headers" ||
+		pkg[0] == "Vulkan-Loader") {
+		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+[0-9]+)";
+	} else if (pkg[0] == "SPIRV-Headers" ||
+		pkg[0] == "SPIRV-Tools") {
+		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+[0-9]+\\.[0-9]+)";
 	} else if (pkg[0] == "dbus") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+\\.[0-9]+\\.[0-9]+)";	
+	} else if (pkg[0] == "hwdata") {
+		pattern = "([0-9]+\\.[0-9]+[0-9]+[0-9]+)";
+	} else if (pkg[0] == "NVIDIA") {
+		pattern = "([0-9]+[0-9]+[0-9]+\\.[0-9]+[0-9]+)";	
+	} else if (pkg[0] == "ply") {
+		pattern = "([0-9]+\\.[0-9]+[0-9]+)";
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
@@ -213,7 +233,8 @@ void take_out_conflicts(char* temp_ver, char* new_ver) {
 			strstr(buffer[i], "vorbis-tools") == NULL &&
 			strstr(buffer[i], "tanuki-shape") == NULL &&
 			strstr(buffer[i], "span class") == NULL &&
-			strstr(buffer[i], "script") == NULL) {
+			strstr(buffer[i], "script") == NULL &&
+			strstr(buffer[i], "src=") == NULL) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
 		}
@@ -264,16 +285,20 @@ void extract_version_github(const char* pkg[4], char* temp_ver, char* new_ver) {
 	//printf("Debug: JSON:\n%s", temp_ver);
 	char new_temp[500000] = {0};
 	struct json_object* s_json_obj;
-	struct json_object* tag_name;
+	struct json_object* subject;
 	s_json_obj = json_tokener_parse(temp_ver);
 	if (s_json_obj == NULL) {
 		fprintf(stderr, "Cannot parse JSON... did it download?\n");
 	} else {
-		if (json_object_object_get_ex(s_json_obj, "tag_name", &tag_name)) {
+		if (json_object_object_get_ex(s_json_obj, "tag_name", &subject)) {
 		//printf("DEBUG: tag name: %s\n", json_object_get_string(tag_name));
-		strcpy(new_temp, json_object_get_string(tag_name));
+		strcpy(new_temp, json_object_get_string(subject));
+		} else if (json_object_object_get_ex(s_json_obj, "name", &subject)) {
+		strcpy(new_temp, json_object_get_string(subject));
+		} else if (json_object_object_get_ex(s_json_obj, "html_url", &subject)) {
+		strcpy(new_temp, json_object_get_string(subject));
 		} else {
-		fprintf(stderr, "Tag name not found in JSON...\n");
+		fprintf(stderr, "Valid keynames not found in JSON...\n");
 		}
 		json_object_put(s_json_obj);
 	}
@@ -321,7 +346,15 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pkg[0] == "make-ca" ||
 	pkg[0] == "libpsl" ||
 	pkg[0] == "libsndfile" ||
-	pkg[0] == "HarfBuzz") {
+	pkg[0] == "HarfBuzz" ||
+	pkg[0] == "glslang" ||
+	pkg[0] == "hwdata" ||
+	pkg[0] == "LLVM & libclc" ||
+	pkg[0] == "Rustc" ||
+	pkg[0] == "Cbindgen" ||
+	pkg[0] == "rust-bindgen" ||
+	pkg[0] == "libva" ||
+	pkg[0] == "libvdpau-va-gl") {
 			extract_version_github(pkg, temp_ver, latest_version);
 		} else {
 			extract_version_html(pkg, temp_ver, latest_version);
@@ -336,9 +369,9 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 
 void process_pkg_info(const char* pkg[4], CURL* curl, char* latest_version, char* changelog) {
 	//printf("DEBUG: Fetching %s...\n", pkg[0]);
-	Entity entities[100] = {0};
+	Entity entities[1000] = {0};
 	char old_version[100] = {0};
-	int entity_count = parse_packages_ent(g_argv[g_argc - 1], entities, 100);
+	int entity_count = parse_packages_ent(g_argv[g_argc - 1], entities, 1000);
 	for (int i = 0; i < entity_count; i++) {
 		if (strcmp(entities[i].name, pkg[1]) == 0) {
 			strncpy(old_version, entities[i].value, 100 - 1);
@@ -616,12 +649,75 @@ void check_package_versions(void) {
 		}, { "libglvnd", "libglvnd-version",
 			"https://gitlab.freedesktop.org/glvnd/libglvnd/-/tags",
 			"\0"
+		}, { "Vulkan-Headers", "vulkan-headers-version",
+			"https://api.github.com/repos/KhronosGroup/Vulkan-Headers/tags",
+			"\0"
+		}, { "Vulkan-Loader", "vulkan-loader-version",
+			"https://api.github.com/repos/KhronosGroup/Vulkan-Loader/tags",
+			"\0"
+		}, { "SPIRV-Headers", "spirv-headers-version",
+			"https://api.github.com/repos/KhronosGroup/SPIRV-Headers/tags",
+			"\0"
+		}, { "SPIRV-Tools", "spirv-tools-version",
+			"https://api.github.com/repos/KhronosGroup/SPIRV-Tools/tags",
+			"\0"
+		}, { "glslang", "glslang-version",
+			"https://api.github.com/repos/KhronosGroup/glslang/releases/latest",
+			"\0"
+		}, { "pciutils", "pciutils-version",
+			"https://mj.ucw.cz/download/linux/pci/",
+			"\0"
+		}, { "hwdata", "hwdata-version",
+			"https://api.github.com/repos/vcrhonek/hwdata/releases/latest",
+			"\0"
+		}, { "LLVM & libclc", "llvm-version",
+			"https://api.github.com/repos/llvm/llvm-project/releases/latest",
+			"\0"
+		}, { "Rustc", "rust-version",
+			"https://api.github.com/repos/rust-lang/rust/releases/latest",
+			"\0"
+		}, { "Cbindgen", "cbindgen-version",
+			"https://api.github.com/repos/mozilla/cbindgen/releases/latest",
+			"\0"
+		}, { "rust-bindgen", "rust-bindgen-version",
+			"https://api.github.com/repos/rust-lang/rust-bindgen/releases/latest",
+			"\0"
+		}, { "Mako", "mako-version",
+			"https://pypi.org/project/Mako/",
+			"\0"
+		}, { "libdrm", "libdrm-version",
+			"https://gitlab.freedesktop.org/mesa/drm/-/tags",
+			"\0"
+		}, { "libva", "libva-version",
+			"https://api.github.com/repos/intel/libva/releases/latest",
+			"\0"
+		}, { "libvdpau", "libvdpau-version",
+			"https://gitlab.freedesktop.org/vdpau/libvdpau/-/tags",
+			"\0"
+		}, { "libvdpau-va-gl", "libvdpau-va-gl-version",
+			"https://api.github.com/repos/i-rinat/libvdpau-va-gl/releases/latest",
+			"\0"
+		}, { "SPIRV-LLVM-Translator", "spirv-llvm-translator-version",
+			"https://api.github.com/repos/KhronosGroup/SPIRV-LLVM-Translator/tags",
+			"\0"
+		}, { "ply", "ply-version",
+			"https://pypi.org/project/ply/",
+			"\0"
+		}, { "Mesa", "mesa-version",
+			"https://gitlab.freedesktop.org/mesa/mesa/-/tags",
+			"\0"
 		}
 	};
-	printf("WARNING - Checking dbus and icu cannot be done at the moment.\n\n");
 
 	int package_count = sizeof(packages) / sizeof(packages[0]);
 	int max_threads = sysconf(_SC_NPROCESSORS_ONLN);
+	printf("Detected amount of threads - %i\n", max_threads);
+	printf("Using %i threads...\n", max_threads);
+	printf("WARNING - Checking dbus cannot be done at the moment\n");
+	printf("WARNING - Checking icu cannot be done at the moment\n");
+	printf("WARNING - Checking AMDGPU PRO cannot be done at the moment\n");
+	printf("WARNING - Checking NVIDIA cannot be done at the moment\n");
+	printf("WARNING - Check relevant release pages or track BLFS updates\n\n");
 	pthread_t threads[max_threads];
 	ThreadArgs threadArgs[max_threads];
 	int thread_count = 0;
