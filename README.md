@@ -1,10 +1,6 @@
 # chkpkgver
 Compares and fetches versions of GLFS packages against itself and online
-results. It's not done yet and won't be for a while. The current solution
-for checking versions of packages is by comparing GLFS with BLFS and
-downloading current package versions from Arch PKGBUILD files. This is
-not ideal. The current solution also relies on a Bash script but can
-grow unmaintainable. It doesn't scale well.
+results.
 
 # Building, Installation, and Use
 Dependencies:
