@@ -259,7 +259,6 @@ void take_out_conflicts(char* temp_ver, char* new_ver, const char* pkg[4]) {
 			strstr(buffer[i], "tanuki-shape") == NULL &&
 			strstr(buffer[i], "span class") == NULL &&
 			strstr(buffer[i], "script") == NULL &&
-			strstr(buffer[i], "src=") == NULL &&
 			strstr(buffer[i], "commit") == NULL) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
@@ -274,14 +273,20 @@ void take_out_conflicts(char* temp_ver, char* new_ver, const char* pkg[4]) {
 			strstr(buffer[i], "tanuki-shape") == NULL &&
 			strstr(buffer[i], "span class") == NULL &&
 			strstr(buffer[i], "script") == NULL &&
-			strstr(buffer[i], "src=") == NULL &&
 			strstr(buffer[i], "commit") == NULL) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
 		} } }
-		else if (pkg[0] == "libgpg-error") {
+		else if (pkg[0] == "Mako") {
 		if (strstr(buffer[i], "Apache") == NULL &&
-			strstr(buffer[i], "DOCTYPE") == NULL) {
+			strstr(buffer[i], "DOCTYPE") == NULL &&
+			strstr(buffer[i], "topology") == NULL &&
+			strstr(buffer[i], "ucm-conf") == NULL &&
+			strstr(buffer[i], "span class") == NULL &&
+			strstr(buffer[i], "tanuki-shape") == NULL &&
+			strstr(buffer[i], "script") == NULL &&
+			strstr(buffer[i], "src=") == NULL &&
+			strstr(buffer[i], "commit") == NULL) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
 		} }
@@ -294,7 +299,6 @@ void take_out_conflicts(char* temp_ver, char* new_ver, const char* pkg[4]) {
 			strstr(buffer[i], "tanuki-shape") == NULL &&
 			strstr(buffer[i], "span class") == NULL &&
 			strstr(buffer[i], "script") == NULL &&
-			strstr(buffer[i], "src=") == NULL &&
 			strstr(buffer[i], "commit") == NULL &&
 			strstr(buffer[i], "2.8.99.1") == NULL) {
 			strcat(new_ver, buffer[i]);
@@ -344,28 +348,27 @@ void extract_version_html(const char* pkg[4], char* temp_ver, char* new_ver) {
 }
 
 void extract_version_github(const char* pkg[4], char* temp_ver, char* new_ver) {
-	//printf("Debug: JSON:\n%s", temp_ver);
 	char new_temp[500000] = {0};
 	struct json_object* s_json_obj;
-	struct json_object* subject;
+	struct json_object* tag_name;
+	struct json_object* name;
+	struct json_object* html_url;
 	s_json_obj = json_tokener_parse(temp_ver);
 	if (s_json_obj == NULL) {
 		fprintf(stderr, "Cannot parse JSON... did it download?\n");
 	} else {
-		if (json_object_object_get_ex(s_json_obj, "tag_name", &subject)) {
-		//printf("DEBUG: tag name: %s\n", json_object_get_string(tag_name));
-		strcpy(new_temp, json_object_get_string(subject));
-		} else if (json_object_object_get_ex(s_json_obj, "name", &subject)) {
-		strcpy(new_temp, json_object_get_string(subject));
-		} else if (json_object_object_get_ex(s_json_obj, "html_url", &subject)) {
-		strcpy(new_temp, json_object_get_string(subject));
-		} else {
-		fprintf(stderr, "Valid keynames not found in JSON...\n");
+		if (json_object_object_get_ex(s_json_obj, "tag_name", &tag_name)) {
+			strcpy(new_temp, json_object_get_string(tag_name));
+		}
+		if (json_object_object_get_ex(s_json_obj, "name", &name)) {
+			strcpy(new_temp, json_object_get_string(name));
+		}
+		if (json_object_object_get_ex(s_json_obj, "html_url", &html_url)) {
+			strcpy(new_temp, json_object_get_string(html_url));
 		}
 		json_object_put(s_json_obj);
 	}
 	extract_version_html(pkg, new_temp, new_ver);
-	//printf("DEBUG: new version: %s\n", new_ver);
 }
 
 void extract_info_html(char* temp_info, char* new_info) {
@@ -375,6 +378,7 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pthread_mutex_lock(&lock);
 	char temp_ver[500000] = {0};
 	char temp_info[500000] = {0};
+	//curl = curl_easy_init();
 	CURLcode resfetch;
 	if (curl) {
 		curl_easy_setopt(curl, CURLOPT_URL, pkg[2]);
@@ -385,9 +389,7 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 		resfetch = curl_easy_perform(curl);
 		if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", pkg[2]);
-			fprintf(stderr, "%s\n",
-				curl_easy_strerror(resfetch));
-			return;
+			printf("%s\n", curl_easy_strerror(resfetch));
 		}
 		temp_ver[499999] = '\0';
 		if (pkg[3] != "\0") {
@@ -398,9 +400,7 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 			resfetch = curl_easy_perform(curl);
 			if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", pkg[3]);
-			fprintf(stderr, "%s\n",
-				curl_easy_strerror(resfetch));
-			return;
+			printf("%s\n", curl_easy_strerror(resfetch));
 			}
 		}
 		temp_info[499999] = '\0';
@@ -409,6 +409,10 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pkg[0] == "libpsl" ||
 	pkg[0] == "libsndfile" ||
 	pkg[0] == "HarfBuzz" ||
+	//pkg[0] == "Vulkan-Headers" ||
+	//pkg[0] == "Vulkan-Loader" ||
+	//pkg[0] == "SPIRV-Headers" ||
+	//pkg[0] == "SPIRV-Tools" ||
 	pkg[0] == "glslang" ||
 	pkg[0] == "hwdata" ||
 	pkg[0] == "LLVM & libclc" ||
@@ -417,6 +421,7 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pkg[0] == "rust-bindgen" ||
 	pkg[0] == "libva" ||
 	pkg[0] == "libvdpau-va-gl" ||
+	//pkg[0] == "SPIRV-LLVM-Translator" ||
 	pkg[0] == "libepoxy" ||
 	pkg[0] == "Xorg Wacom Driver" ||
 	pkg[0] == "SDL2") {
@@ -428,8 +433,8 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 		extract_info_html(temp_info, changelog);
 		changelog[4096 - 1] = '\0';
 	}
-	pthread_mutex_unlock(&lock);
 	curl_easy_cleanup(curl);
+	pthread_mutex_unlock(&lock);
 }
 
 void process_pkg_info(const char* pkg[4], CURL* curl, char* latest_version, char* changelog) {
@@ -470,14 +475,15 @@ void process_pkg_info(const char* pkg[4], CURL* curl, char* latest_version, char
 
 void* thread_function(void* arg) {
 	ThreadArgs* threadArgs = (ThreadArgs*)arg;
-	threadArgs->curl = curl_easy_init();
+	//threadArgs->curl = curl_easy_init();
 	if (!threadArgs->curl) {
 		fprintf(stderr, "Failed to create cURL handle\n");
 		return NULL;
 	}
+	strcpy(threadArgs->latest_version, "\0");
 	process_pkg_info(threadArgs->pkg, threadArgs->curl,
 		threadArgs->latest_version, threadArgs->changelog);
-	curl_easy_cleanup(threadArgs->curl);
+	//curl_easy_cleanup(threadArgs->curl);
 	return NULL;
 }
 
