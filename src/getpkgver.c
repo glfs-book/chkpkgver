@@ -112,7 +112,7 @@ const char* version_dictionary(const char* pkg[4]) {
 		pattern = "([0-9]+\\_[0-9]+[0-9]+[0-9]+)";
 	} else if (pkg[0] == "make-ca" ||
 		pkg[0] == "libvdpau") {
-		pattern = "([0-9]+\\.[0-9]+)";	
+		pattern = "([0-9]+\\.[0-9]+[0-9]?)";	
 	} else if (pkg[0] == "libunistring") {
 		pattern = "([0-1]+\\.[0-9]+)";
 	} else if (pkg[0] == "Wget" ||
@@ -126,7 +126,11 @@ const char* version_dictionary(const char* pkg[4]) {
 		pkg[0] == "libXaw" ||
 		pkg[0] == "libXrender" ||
 		pkg[0] == "libXv" ||
-		pkg[0] == "libXvMC") {
+		pkg[0] == "libXvMC" ||
+		pkg[0] == "xcb-util-renderutil" ||
+		pkg[0] == "iceauth" ||
+		pkg[0] == "xmodmap" ||
+		pkg[0] == "libepoxy") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
 	} else if (pkg[0] == "PulseAudio") {
 		pattern = "([1-5]+[0-9]\\.[0-9]+)";
@@ -142,19 +146,29 @@ const char* version_dictionary(const char* pkg[4]) {
 		pkg[0] == "pciutils" ||
 		pkg[0] == "Rustc" ||
 		pkg[0] == "Cbindgen" ||
-		pkg[0] == "rust-bindgen") {
+		pkg[0] == "rust-bindgen" ||
+		pkg[0] == "libevdev" ||
+		pkg[0] == "Xorg Evdev Driver" ||
+		pkg[0] == "libinput" ||
+		pkg[0] == "SDL2") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+\\.[0-9]+)";
 	} else if (pkg[0] == "xorgproto") {
 		pattern = "([0-9]+[0-9]+[0-9]+[0-9]+\\.[0-9]+)";
 	} else if (pkg[0] == "Which" ||
 		pkg[0] == "Nettle" ||
 		pkg[0] == "icu" ||
-		pkg[0] == "Wayland-Protocols") {
+		pkg[0] == "Wayland-Protocols" ||
+		pkg[0] == "XKeyboardConfig" ||
+		pkg[0] == "binutils" ||
+		pkg[0] == "Wine") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+)";
 	} else if (pkg[0] == "libXcomposite") {
 		pattern = "([0]+\\.[0-9]+\\.[0-9]+)";
 	} else if (pkg[0] == "glslang" ||
-		pkg[0] == "SPIRV-LLVM-Translator") {
+		pkg[0] == "SPIRV-LLVM-Translator" ||
+		pkg[0] == "Xwayland" ||
+		pkg[0] == "GCC" ||
+		pkg[0] == "MinGW-w64") {
 		pattern = "([0-9]+[0-9]+\\.[0-9]+\\.[0-9]+)";
 	} else if (pkg[0] == "Vulkan-Headers" ||
 		pkg[0] == "Vulkan-Loader") {
@@ -168,8 +182,17 @@ const char* version_dictionary(const char* pkg[4]) {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+[0-9]+)";
 	} else if (pkg[0] == "NVIDIA") {
 		pattern = "([0-9]+[0-9]+[0-9]+\\.[0-9]+[0-9]+)";	
-	} else if (pkg[0] == "ply") {
+	} else if (pkg[0] == "ply" ||
+		pkg[0] == "Xdg-user-dirs" ||
+		pkg[0] == "libgpg-error" ||
+		pkg[0] == "binutils") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+)";
+	} else if (pkg[0] == "luit") {
+		pattern = "([0-9]+[0-9]+[0-9]+[0-9]+[0-9]+[0-9]+[0-9]+[0-9]+)";
+	} else if (pkg[0] == "Xorg-Server") {
+		pattern = "([0-9]+[0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";	
+	} else if (pkg[0] == "Steam") {
+		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
@@ -205,7 +228,7 @@ void take_out_data_sizes(char* temp) {
 	pcre2_code_free(regex);
 }
 
-void take_out_conflicts(char* temp_ver, char* new_ver) {
+void take_out_conflicts(char* temp_ver, char* new_ver, const char* pkg[4]) {
 	char* line;
 	char** buffer;
 	int line_count = 0;
@@ -226,6 +249,8 @@ void take_out_conflicts(char* temp_ver, char* new_ver) {
 	new_ver[0] = '\0';
 	for (int i = 0; i < line_count; i++) {
 		take_out_data_sizes(buffer[i]);
+		if (pkg[0] == "Xorg-Server") {
+		if (strstr(buffer[i], "xwayland") == NULL) {
 		if (strstr(buffer[i], "Apache") == NULL &&
 			strstr(buffer[i], "DOCTYPE") == NULL &&
 			strstr(buffer[i], "topology") == NULL &&
@@ -234,10 +259,47 @@ void take_out_conflicts(char* temp_ver, char* new_ver) {
 			strstr(buffer[i], "tanuki-shape") == NULL &&
 			strstr(buffer[i], "span class") == NULL &&
 			strstr(buffer[i], "script") == NULL &&
-			strstr(buffer[i], "src=") == NULL) {
+			strstr(buffer[i], "src=") == NULL &&
+			strstr(buffer[i], "commit") == NULL) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
-		}
+		} } }
+		else if (pkg[0] == "Xwayland") {
+		if (strstr(buffer[i], "xorg-server") == NULL) {
+		if (strstr(buffer[i], "Apache") == NULL &&
+			strstr(buffer[i], "DOCTYPE") == NULL &&
+			strstr(buffer[i], "topology") == NULL &&
+			strstr(buffer[i], "ucm-conf") == NULL &&
+			strstr(buffer[i], "vorbis-tools") == NULL &&
+			strstr(buffer[i], "tanuki-shape") == NULL &&
+			strstr(buffer[i], "span class") == NULL &&
+			strstr(buffer[i], "script") == NULL &&
+			strstr(buffer[i], "src=") == NULL &&
+			strstr(buffer[i], "commit") == NULL) {
+			strcat(new_ver, buffer[i]);
+			strcat(new_ver, "\n");
+		} } }
+		else if (pkg[0] == "libgpg-error") {
+		if (strstr(buffer[i], "Apache") == NULL &&
+			strstr(buffer[i], "DOCTYPE") == NULL) {
+			strcat(new_ver, buffer[i]);
+			strcat(new_ver, "\n");
+		} }
+		else {
+		if (strstr(buffer[i], "Apache") == NULL &&
+			strstr(buffer[i], "DOCTYPE") == NULL &&
+			strstr(buffer[i], "topology") == NULL &&
+			strstr(buffer[i], "ucm-conf") == NULL &&
+			strstr(buffer[i], "vorbis-tools") == NULL &&
+			strstr(buffer[i], "tanuki-shape") == NULL &&
+			strstr(buffer[i], "span class") == NULL &&
+			strstr(buffer[i], "script") == NULL &&
+			strstr(buffer[i], "src=") == NULL &&
+			strstr(buffer[i], "commit") == NULL &&
+			strstr(buffer[i], "2.8.99.1") == NULL) {
+			strcat(new_ver, buffer[i]);
+			strcat(new_ver, "\n");
+		} }
 		free(buffer[i]);
 	}
 	free(buffer);
@@ -246,7 +308,7 @@ void take_out_conflicts(char* temp_ver, char* new_ver) {
 
 void extract_version_html(const char* pkg[4], char* temp_ver, char* new_ver) {
 	char new_temp[500000] = {0};
-	take_out_conflicts(temp_ver, new_temp);
+	take_out_conflicts(temp_ver, new_temp, pkg);
 	pcre2_code* regex;
 	PCRE2_SIZE erroffset;
 	int errorcode;
@@ -319,7 +381,7 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp_ver);
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/pre-0.70");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/1.0.0");
 		resfetch = curl_easy_perform(curl);
 		if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", pkg[2]);
@@ -332,7 +394,7 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 			curl_easy_setopt(curl, CURLOPT_URL, pkg[3]);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp_info);
 			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-			curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/pre-0.70");
+			curl_easy_setopt(curl, CURLOPT_USERAGENT, "chkpkgver/1.0.0");
 			resfetch = curl_easy_perform(curl);
 			if (resfetch != CURLE_OK) {
 			printf("Read from: %s but failed...", pkg[3]);
@@ -354,7 +416,10 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pkg[0] == "Cbindgen" ||
 	pkg[0] == "rust-bindgen" ||
 	pkg[0] == "libva" ||
-	pkg[0] == "libvdpau-va-gl") {
+	pkg[0] == "libvdpau-va-gl" ||
+	pkg[0] == "libepoxy" ||
+	pkg[0] == "Xorg Wacom Driver" ||
+	pkg[0] == "SDL2") {
 			extract_version_github(pkg, temp_ver, latest_version);
 		} else {
 			extract_version_html(pkg, temp_ver, latest_version);
@@ -706,6 +771,222 @@ void check_package_versions(void) {
 		}, { "Mesa", "mesa-version",
 			"https://gitlab.freedesktop.org/mesa/mesa/-/tags",
 			"\0"
+		}, { "xcb-util", "xcb-util-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcb-util/-/tags",
+			"\0"
+		}, { "xcb-util-image", "xcb-util-image-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcb-image/-/tags",
+			"\0"
+		}, { "xcb-util-keysyms", "xcb-util-keysyms-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcb-keysyms/-/tags",
+			"\0"
+		}, { "xcb-util-renderutil", "xcb-util-renderutil-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcb-render-util/-/tags",
+			"\0"
+		}, { "xcb-util-wm", "xcb-util-wm-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcb-wm/-/tags",
+			"\0"
+		}, { "xcb-util-cursor", "xcb-util-cursor-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcb-cursor/-/tags",
+			"\0"
+		}, { "xbitmaps", "xbitmaps-version",
+			"https://gitlab.freedesktop.org/xorg/data/bitmaps/-/tags",
+			"\0"
+		}, { "iceauth", "iceauth-version",
+			"https://gitlab.freedesktop.org/xorg/app/iceauth/-/tags",
+			"\0"
+		}, { "mkfontscale", "mkfontscale-version",
+			"https://gitlab.freedesktop.org/xorg/app/mkfontscale/-/tags",
+			"\0"
+		}, { "sessreg", "sessreg-version",
+			"https://gitlab.freedesktop.org/xorg/app/sessreg/-/tags",
+			"\0"
+		}, { "setxkbmap", "setxkbmap-version",
+			"https://gitlab.freedesktop.org/xorg/app/setxkbmap/-/tags",
+			"\0"
+		}, { "smproxy", "smproxy-version",
+			"https://gitlab.freedesktop.org/xorg/app/smproxy/-/tags",
+			"\0"
+		}, { "x11perf", "x11perf-version",
+			"https://gitlab.freedesktop.org/xorg/test/x11perf/-/tags",
+			"\0"
+		}, { "xauth", "xauth-version",
+			"https://gitlab.freedesktop.org/xorg/app/xauth/-/tags",
+			"\0"
+		}, { "xbacklight", "xbacklight-version",
+			"https://gitlab.freedesktop.org/xorg/app/xbacklight/-/tags",
+			"\0"
+		}, { "xcmsdb", "xcmsdb-version",
+			"https://gitlab.freedesktop.org/xorg/app/xcmsdb/-/tags",
+			"\0"
+		}, { "xcursorgen", "xcursorgen-version",
+			"https://gitlab.freedesktop.org/xorg/app/xcursorgen/-/tags",
+			"\0"
+		}, { "xdpyinfo", "xdpyinfo-version",
+			"https://gitlab.freedesktop.org/xorg/app/xdpyinfo/-/tags",
+			"\0"
+		}, { "xdriinfo", "xdriinfo-version",
+			"https://gitlab.freedesktop.org/xorg/app/xdriinfo/-/tags",
+			"\0"
+		}, { "xev", "xev-version",
+			"https://gitlab.freedesktop.org/xorg/app/xev/-/tags",
+			"\0"
+		}, { "xgamma", "xgamma-version",
+			"https://gitlab.freedesktop.org/xorg/app/xgamma/-/tags",
+			"\0"
+		}, { "xhost", "xhost-version",
+			"https://gitlab.freedesktop.org/xorg/app/xhost/-/tags",
+			"\0"
+		}, { "xinput", "xinput-version",
+			"https://gitlab.freedesktop.org/xorg/app/xinput/-/tags",
+			"\0"
+		}, { "xkbcomp", "xkbcomp-version",
+			"https://gitlab.freedesktop.org/xorg/app/xkbcomp/-/tags",
+			"\0"
+		}, { "xkbevd", "xkbevd-version",
+			"https://gitlab.freedesktop.org/xorg/app/xkbevd/-/tags",
+			"\0"
+		}, { "xkbutils", "xkbutils-version",
+			"https://gitlab.freedesktop.org/xorg/app/xkbutils/-/tags",
+			"\0"
+		}, { "xkill", "xkill-version",
+			"https://gitlab.freedesktop.org/xorg/app/xkill/-/tags",
+			"\0"
+		}, { "xlsatoms", "xlsatoms-version",
+			"https://gitlab.freedesktop.org/xorg/app/xlsatoms/-/tags",
+			"\0"
+		}, { "xlsclients", "xlsclients-version",
+			"https://gitlab.freedesktop.org/xorg/app/xlsclients/-/tags",
+			"\0"
+		}, { "xmessage", "xmessage-version",
+			"https://gitlab.freedesktop.org/xorg/app/xmessage/-/tags",
+			"\0"
+		}, { "xmodmap", "xmodmap-version",
+			"https://gitlab.freedesktop.org/xorg/app/xmodmap/-/tags",
+			"\0"
+		}, { "xpr", "xpr-version",
+			"https://gitlab.freedesktop.org/xorg/app/xpr/-/tags",
+			"\0"
+		}, { "xprop", "xprop-version",
+			"https://gitlab.freedesktop.org/xorg/app/xprop/-/tags",
+			"\0"
+		}, { "xrandr", "xrandr-version",
+			"https://gitlab.freedesktop.org/xorg/app/xrandr/-/tags",
+			"\0"
+		}, { "xrdb", "xrdb-version",
+			"https://gitlab.freedesktop.org/xorg/app/xrdb/-/tags",
+			"\0"
+		}, { "xrefresh", "xrefresh-version",
+			"https://gitlab.freedesktop.org/xorg/app/xrefresh/-/tags",
+			"\0"
+		}, { "xset", "xset-version",
+			"https://gitlab.freedesktop.org/xorg/app/xset/-/tags",
+			"\0"
+		}, { "xsetroot", "xsetroot-version",
+			"https://gitlab.freedesktop.org/xorg/app/xsetroot/-/tags",
+			"\0"
+		}, { "xvinfo", "xvinfo-version",
+			"https://gitlab.freedesktop.org/xorg/app/xvinfo/-/tags",
+			"\0"
+		}, { "xwd", "xwd-version",
+			"https://gitlab.freedesktop.org/xorg/app/xwd/-/tags",
+			"\0"
+		}, { "xwininfo", "xwininfo-version",
+			"https://gitlab.freedesktop.org/xorg/app/xwininfo/-/tags",
+			"\0"
+		}, { "xwud", "xwud-version",
+			"https://gitlab.freedesktop.org/xorg/app/xwud/-/tags",
+			"\0"
+		}, { "luit", "luit-version",
+			"https://invisible-mirror.net/archives/luit/",
+			"\0"
+		}, { "xcursor-themes", "xcursor-themes-version",
+			"https://gitlab.freedesktop.org/xorg/data/cursors/-/tags",
+			"\0"
+		}, { "encodings", "encodings-version",
+			"https://gitlab.freedesktop.org/xorg/font/encodings/-/tags",
+			"\0"
+		}, { "font-adobe-utopia-type1", "font-adobe-utopia-type1-version",
+			"https://gitlab.freedesktop.org/xorg/font/adobe-utopia-type1/-/tags",
+			"\0"
+		}, { "font-alias", "font-alias-version",
+			"https://gitlab.freedesktop.org/xorg/font/alias/-/tags",
+			"\0"
+		}, { "font-bh-ttf", "font-bh-ttf-version",
+			"https://gitlab.freedesktop.org/xorg/font/bh-ttf/-/tags",
+			"\0"
+		}, { "font-bh-type1", "font-bh-type1-version",
+			"https://gitlab.freedesktop.org/xorg/font/bh-type1/-/tags",
+			"\0"
+		}, { "font-ibm-type1", "font-ibm-type1-version",
+			"https://gitlab.freedesktop.org/xorg/font/ibm-type1/-/tags",
+			"\0"
+		}, { "font-misc-ethiopic", "font-misc-ethiopic-version",
+			"https://gitlab.freedesktop.org/xorg/font/misc-ethiopic/-/tags",
+			"\0"
+		}, { "font-util", "font-util-version",
+			"https://gitlab.freedesktop.org/xorg/font/util/-/tags",
+			"\0"
+		}, { "font-xfree86-type1", "font-xfree86-type1-version",
+			"https://gitlab.freedesktop.org/xorg/font/xfree86-type1/-/tags",
+			"\0"
+		}, { "XKeyboardConfig", "xkeyboard-config-version",
+			"https://www.x.org/archive/individual/data/xkeyboard-config/",
+			"\0"
+		}, { "libepoxy", "libepoxy-version",
+			"https://api.github.com/repos/anholt/libepoxy/releases/latest",
+			"\0"
+		}, { "Xorg-Server", "xorg-server-version",
+			"https://gitlab.freedesktop.org/xorg/xserver/-/tags",
+			"\0"
+		}, { "Xwayland", "xwayland-version",
+			"https://gitlab.freedesktop.org/xorg/xserver/-/tags",
+			"\0"
+		}, { "mtdev", "mtdev-version",
+			"https://bitmath.org/code/mtdev/",
+			"\0"
+		}, { "libevdev", "libevdev-version",
+			"https://gitlab.freedesktop.org/libevdev/libevdev/-/tags",
+			"\0"
+		}, { "Xorg Evdev Driver", "xorg-evdev-driver-version",
+			"https://gitlab.freedesktop.org/xorg/driver/xf86-input-evdev/-/tags",
+			"\0"
+		}, { "libinput", "libinput-version",
+			"https://gitlab.freedesktop.org/libinput/libinput/-/tags",
+			"\0"
+		}, { "xorg-libinput", "xorg-libinput-driver-version",
+			"https://gitlab.freedesktop.org/xorg/driver/xf86-input-libinput/-/tags",
+			"\0"
+		}, { "Xorg Synaptics Driver", "xorg-synaptics-driver-version",
+			"https://gitlab.freedesktop.org/xorg/driver/xf86-input-synaptics/-/tags",
+			"\0"
+		}, { "Xorg Wacom Driver", "xorg-wacom-driver-version",
+			"https://api.github.com/repos/linuxwacom/xf86-input-wacom/releases/latest",
+			"\0"
+		}, { "xinit", "xinit-version",
+			"https://gitlab.freedesktop.org/xorg/app/xinit/-/tags",
+			"\0"
+		}, { "Xdg-user-dirs", "xdg-user-dirs-version",
+			"https://gitlab.freedesktop.org/xdg/xdg-user-dirs/-/tags",
+			"\0"
+		}, { "libgpg-error", "libgpg-error-version",
+			"https://www.gnupg.org/ftp/gcrypt/libgpg-error/",
+			"\0"
+		}, { "Steam", "steam-version",
+			"https://repo.steampowered.com/steam/pool/steam/s/steam/",
+			"\0"
+		}, { "MinGW-w64", "mingw-w64-version",
+			"https://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/",
+			"\0"
+		}, { "libxkbcommon", "libxkbcommon-version",
+			"https://xkbcommon.org/download/",
+			"\0"
+		}, { "SDL2", "sdl2-version",
+			"https://api.github.com/repos/libsdl-org/SDL/releases/latest",
+			"\0"
+		}, { "Wine", "wine-version",
+			"https://gitlab.winehq.org/wine/wine/-/tags",
+			"\0"
 		}
 	};
 
@@ -717,6 +998,8 @@ void check_package_versions(void) {
 	printf("WARNING - Checking icu cannot be done at the moment\n");
 	printf("WARNING - Checking AMDGPU PRO cannot be done at the moment\n");
 	printf("WARNING - Checking NVIDIA cannot be done at the moment\n");
+	printf("WARNING - Checking GCC cannot be done at the moment\n");
+	printf("WARNING - Checking binutils cannot be done at the moment\n");
 	printf("WARNING - Check relevant release pages or track BLFS updates\n\n");
 	pthread_t threads[max_threads];
 	ThreadArgs threadArgs[max_threads];
