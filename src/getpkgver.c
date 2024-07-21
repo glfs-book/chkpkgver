@@ -290,6 +290,16 @@ void take_out_conflicts(char* temp_ver, char* new_ver, const char* pkg[4]) {
 			strcat(new_ver, buffer[i]);
 			strcat(new_ver, "\n");
 		} }
+		else if (pkg[0] == "Mesa") {
+		if (strstr(buffer[i], "Apache") == NULL &&
+				strstr(buffer[i], "DOCTYPE") == NULL &&
+				strstr(buffer[i], "span class") == NULL &&
+				strstr(buffer[i], "tanuki-shape") == NULL &&
+				strstr(buffer[i], "script") == NULL &&
+				strstr(buffer[i], "-rc") == NULL) {
+				strcat(new_ver, buffer[i]);
+				strcat(new_ver, "\n");
+		} }
 		else {
 		if (strstr(buffer[i], "Apache") == NULL &&
 			strstr(buffer[i], "DOCTYPE") == NULL &&
@@ -350,24 +360,34 @@ void extract_version_html(const char* pkg[4], char* temp_ver, char* new_ver) {
 void extract_version_github(const char* pkg[4], char* temp_ver, char* new_ver) {
 	char new_temp[500000] = {0};
 	struct json_object* s_json_obj;
-	struct json_object* tag_name;
-	struct json_object* name;
-	struct json_object* html_url;
+	struct json_object* subject;
 	s_json_obj = json_tokener_parse(temp_ver);
 	if (s_json_obj == NULL) {
 		fprintf(stderr, "Cannot parse JSON... did it download?\n");
-	} else {
-		if (json_object_object_get_ex(s_json_obj, "tag_name", &tag_name)) {
-			strcpy(new_temp, json_object_get_string(tag_name));
-		}
-		if (json_object_object_get_ex(s_json_obj, "name", &name)) {
-			strcpy(new_temp, json_object_get_string(name));
-		}
-		if (json_object_object_get_ex(s_json_obj, "html_url", &html_url)) {
-			strcpy(new_temp, json_object_get_string(html_url));
-		}
-		json_object_put(s_json_obj);
 	}
+	if (json_object_get_type(s_json_obj) == json_type_array) {
+		int json_len = json_object_array_length(s_json_obj);
+		for (int i = 0; i < json_len; i++) {
+			struct json_object* json_index = json_object_array_get_idx(s_json_obj, i);
+			if (json_object_object_get_ex(json_index, "tag_name", &subject)) {
+				strcat(new_temp, json_object_get_string(subject));
+			} else if (json_object_object_get_ex(json_index, "name", &subject)) {
+				strcat(new_temp, json_object_get_string(subject));
+			} else if (json_object_object_get_ex(json_index, "html_url", &subject)) {
+				strcat(new_temp, json_object_get_string(subject));
+			}
+		} } else {
+		if (json_object_object_get_ex(s_json_obj, "tag_name", &subject)) {
+			strcat(new_temp, json_object_get_string(subject));
+		} else if (json_object_object_get_ex(s_json_obj, "name", &subject)) {
+			strcat(new_temp, json_object_get_string(subject));
+		} else if (json_object_object_get_ex(s_json_obj, "html_url", &subject)) {
+			strcat(new_temp, json_object_get_string(subject));
+		} else {
+			printf("No valid keynames in JSON...\n");
+		}
+	}
+	json_object_put(s_json_obj);
 	extract_version_html(pkg, new_temp, new_ver);
 }
 
@@ -409,10 +429,10 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pkg[0] == "libpsl" ||
 	pkg[0] == "libsndfile" ||
 	pkg[0] == "HarfBuzz" ||
-	//pkg[0] == "Vulkan-Headers" ||
-	//pkg[0] == "Vulkan-Loader" ||
-	//pkg[0] == "SPIRV-Headers" ||
-	//pkg[0] == "SPIRV-Tools" ||
+	pkg[0] == "Vulkan-Headers" ||
+	pkg[0] == "Vulkan-Loader" ||
+	pkg[0] == "SPIRV-Headers" ||
+	pkg[0] == "SPIRV-Tools" ||
 	pkg[0] == "glslang" ||
 	pkg[0] == "hwdata" ||
 	pkg[0] == "LLVM & libclc" ||
@@ -421,7 +441,7 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pkg[0] == "rust-bindgen" ||
 	pkg[0] == "libva" ||
 	pkg[0] == "libvdpau-va-gl" ||
-	//pkg[0] == "SPIRV-LLVM-Translator" ||
+	pkg[0] == "SPIRV-LLVM-Translator" ||
 	pkg[0] == "libepoxy" ||
 	pkg[0] == "Xorg Wacom Driver" ||
 	pkg[0] == "SDL2") {
