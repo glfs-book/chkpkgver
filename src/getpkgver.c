@@ -1022,7 +1022,6 @@ void check_package_versions(void) {
 	printf("Using %i threads...\n", max_threads);
 	printf("WARNING - Checking dbus cannot be done at the moment\n");
 	printf("WARNING - Checking icu cannot be done at the moment\n");
-	printf("WARNING - Checking AMDGPU PRO cannot be done at the moment\n");
 	printf("WARNING - Checking NVIDIA cannot be done at the moment\n");
 	printf("WARNING - Checking GCC cannot be done at the moment\n");
 	printf("WARNING - Checking binutils cannot be done at the moment\n");
