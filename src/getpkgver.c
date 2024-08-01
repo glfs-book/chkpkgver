@@ -109,7 +109,7 @@ const char* version_dictionary(const char* pkg[4]) {
 	if (pkg[0] == "NSPR") {
 		pattern = "([0-4]+\\.[0-3]+[0-9]+)";
 	} else if (pkg[0] == "NSS") {
-		pattern = "([0-9]+\\_[0-9]+[0-9]+[0-9]+)";
+		pattern = "([0-9]+_[0-9]{3,}(?:_[0-9]+)?)";
 	} else if (pkg[0] == "make-ca" ||
 		pkg[0] == "libvdpau") {
 		pattern = "([0-9]+\\.[0-9]+[0-9]?)";	
