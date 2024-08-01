@@ -815,6 +815,9 @@ void check_package_versions(void) {
 		}, { "xcb-util-cursor", "xcb-util-cursor-version",
 			"https://gitlab.freedesktop.org/xorg/lib/libxcb-cursor/-/tags",
 			"\0"
+		}, { "xcb-util-errors", "xcb-util-errors-version",
+			"https://gitlab.freedesktop.org/xorg/lib/libxcb-errors/-/tags",
+			"\0"
 		}, { "xbitmaps", "xbitmaps-version",
 			"https://gitlab.freedesktop.org/xorg/data/bitmaps/-/tags",
 			"\0"
