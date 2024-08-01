@@ -130,7 +130,8 @@ const char* version_dictionary(const char* pkg[4]) {
 		pkg[0] == "xcb-util-renderutil" ||
 		pkg[0] == "iceauth" ||
 		pkg[0] == "xmodmap" ||
-		pkg[0] == "libepoxy") {
+		pkg[0] == "libepoxy" ||
+		pkg[0] == "libX11") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
 	} else if (pkg[0] == "PulseAudio") {
 		pattern = "([1-5]+[0-9]\\.[0-9]+)";
