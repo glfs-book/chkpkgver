@@ -481,6 +481,7 @@ void process_pkg_info(const char* pkg[4], CURL* curl, char* latest_version, char
 		printf("  New version: %s\n", latest_version);
 		if (pkg[0] == "Python") {
 			printf("  3.13 is in beta.\n  Check schedule: https://peps.python.org/pep-0719/\n");
+			printf("  3.14 is in development.\n");
 		}
 		if (changelog[0] != '\0') {
 			printf("  Changelog: %s\n", changelog);
