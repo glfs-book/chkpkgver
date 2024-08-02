@@ -485,8 +485,6 @@ void process_pkg_info(const char* pkg[4], CURL* curl, char* latest_version, char
 		}
 		if (changelog[0] != '\0') {
 			printf("  Changelog: %s\n", changelog);
-		} else {
-			printf("  There is no changelog with this release.\n");
 		}
 		printf("\n");
 	}
