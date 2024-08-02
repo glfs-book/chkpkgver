@@ -1025,11 +1025,12 @@ void check_package_versions(void) {
 	int max_threads = sysconf(_SC_NPROCESSORS_ONLN);
 	printf("Detected amount of threads - %i\n", max_threads);
 	printf("Using %i threads...\n", max_threads);
-	printf("WARNING - Checking   dbus   cannot be done at the moment\n");
-	printf("WARNING - Checking   icu    cannot be done at the moment\n");
-	printf("WARNING - Checking  NVIDIA  cannot be done at the moment\n");
-	printf("WARNING - Checking   GCC    cannot be done at the moment\n");
-	printf("WARNING - Checking binutils cannot be done at the moment\n");
+	printf("WARNING - Checking    dbus    cannot be done at the moment\n");
+	printf("WARNING - Checking    icu     cannot be done at the moment\n");
+	printf("WARNING - Checking   NVIDIA   cannot be done at the moment\n");
+	printf("WARNING - Checking AMDGPU PRO cannot be done at the moment\n");
+	printf("WARNING - Checking    GCC     cannot be done at the moment\n");
+	printf("WARNING - Checking  binutils  cannot be done at the moment\n");
 	printf("WARNING - Check relevant release pages or track BLFS updates\n\n");
 	pthread_t threads[max_threads];
 	ThreadArgs threadArgs[max_threads];
