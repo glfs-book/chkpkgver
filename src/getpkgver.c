@@ -132,11 +132,13 @@ const char* version_dictionary(const char* pkg[4]) {
 		pkg[0] == "xmodmap" ||
 		pkg[0] == "libepoxy" ||
 		pkg[0] == "libX11" ||
-		pkg[0] == "libFS") {
+		pkg[0] == "libFS" ||
+		pkg[0] == "Cython") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
 	} else if (pkg[0] == "PulseAudio") {
 		pattern = "([1-5]+[0-9]\\.[0-9]+)";
-	} else if (pkg[0] == "util-macros" ||
+	} else if (pkg[0] == "cURL" ||
+		pkg[0] == "util-macros" ||
 		pkg[0] == "libxcb" ||
 		pkg[0] == "xcb-proto" ||
 		pkg[0] == "Python" ||
@@ -145,6 +147,8 @@ const char* version_dictionary(const char* pkg[4]) {
 		pkg[0] == "CMake" ||
 		pkg[0] == "Pixman" ||
 		pkg[0] == "libxml2" ||
+		pkg[0] == "Shadow" ||
+		pkg[0] == "GLib" ||
 		pkg[0] == "pciutils" ||
 		pkg[0] == "Rustc" ||
 		pkg[0] == "Cbindgen" ||
@@ -184,7 +188,8 @@ const char* version_dictionary(const char* pkg[4]) {
 		pattern = "([0-9]+\\.[0-9]+[0-9]+[0-9]+)";
 	} else if (pkg[0] == "NVIDIA") {
 		pattern = "([0-9]+[0-9]+[0-9]+\\.[0-9]+[0-9]+)";	
-	} else if (pkg[0] == "ply" ||
+	} else if (pkg[0] == "desktop-file-utils" ||
+		pkg[0] == "ply" ||
 		pkg[0] == "Xdg-user-dirs" ||
 		pkg[0] == "libgpg-error" ||
 		pkg[0] == "binutils") {
@@ -195,6 +200,14 @@ const char* version_dictionary(const char* pkg[4]) {
 		pattern = "([0-9]+[0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";	
 	} else if (pkg[0] == "Steam") {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+[0-9]+)";
+	} else if (pkg[0] == "GnuTLS") {
+		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+(?:\\.[0-9]+)?)";
+	} else if (pkg[0] == "elogind") {
+		pattern = "([0-9]+[0-9]+[0-9]+\\.[0-9]+)";
+	} else if (pkg[0] == "Polkit") {
+		pattern = "([0-9]+[0-9]+[0-9]+)";
+	} else if (pkg[0] == "shared-mime-info") {
+		pattern = "([0-9]+\\.[0-9]+)";
 	} else {
 		pattern = "([0-9]+\\.[0-9]+\\.[0-9]+)";
 	}
@@ -431,6 +444,11 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pkg[0] == "libpsl" ||
 	pkg[0] == "libsndfile" ||
 	pkg[0] == "HarfBuzz" ||
+	pkg[0] == "Linux-PAM" ||
+	pkg[0] == "Shadow" ||
+	pkg[0] == "elogind" ||
+	pkg[0] == "duktape" ||
+	pkg[0] == "Polkit" ||
 	pkg[0] == "Vulkan-Headers" ||
 	pkg[0] == "Vulkan-Loader" ||
 	pkg[0] == "SPIRV-Headers" ||
@@ -444,6 +462,8 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 	pkg[0] == "libva" ||
 	pkg[0] == "libvdpau-va-gl" ||
 	pkg[0] == "SPIRV-LLVM-Translator" ||
+	pkg[0] == "Cython" ||
+	pkg[0] == "libyaml" ||
 	pkg[0] == "libepoxy" ||
 	pkg[0] == "Xorg Wacom Driver" ||
 	pkg[0] == "SDL2") {
@@ -729,6 +749,30 @@ void check_package_versions(void) {
 		}, { "libxml2", "libxml2-version",
 			"https://gitlab.gnome.org/GNOME/libxml2/-/tags",
 			"\0"
+		}, { "Linux-PAM", "linux-pam-version",
+			"https://api.github.com/repos/linux-pam/linux-pam/releases/latest",
+			"\0"
+		}, { "Shadow", "shadow-version",
+			"https://api.github.com/repos/shadow-maint/shadow/releases/latest",
+			"\0"
+		}, { "elogind", "elogind-version",
+			"https://api.github.com/repos/elogind/elogind/releases/latest",
+			"\0"
+		}, { "duktape", "duktape-version",
+			"https://api.github.com/repos/svaarala/duktape/releases/latest",
+			"\0"
+		}, { "GLib", "glib2-version",
+			"https://gitlab.gnome.org/GNOME/glib/-/tags",
+			"\0"
+		}, { "shared-mime-info", "shared-mime-info-version",
+			"https://gitlab.freedesktop.org/xdg/shared-mime-info/-/tags",
+			"\0"
+		}, { "desktop-file-utils", "desktop-file-utils-version",
+			"https://gitlab.freedesktop.org/xdg/desktop-file-utils/-/tags",
+			"\0"
+		}, { "Polkit", "polkit-version",
+			"https://api.github.com/repos/polkit-org/polkit/releases/latest",
+			"\0"
 		}, { "Wayland", "wayland-version",
 			"https://gitlab.freedesktop.org/wayland/wayland/-/tags",
 			"\0"
@@ -769,7 +813,7 @@ void check_package_versions(void) {
 			"https://api.github.com/repos/rust-lang/rust/releases/latest",
 			"\0"
 		}, { "Cbindgen", "cbindgen-version",
-			"https://api.github.com/repos/mozilla/cbindgen/releases/latest",
+			"https://api.github.com/repos/mozilla/cbindgen/tags",
 			"\0"
 		}, { "rust-bindgen", "rust-bindgen-version",
 			"https://api.github.com/repos/rust-lang/rust-bindgen/releases/latest",
@@ -794,6 +838,15 @@ void check_package_versions(void) {
 			"\0"
 		}, { "ply", "ply-version",
 			"https://pypi.org/project/ply/",
+			"\0"
+		}, { "Cython", "cython-version",
+			"https://api.github.com/repos/cython/cython/releases/latest",
+			"\0"
+		}, { "libyaml", "yaml-version",
+			"https://api.github.com/repos/yaml/libyaml/releases/latest",
+			"\0"
+		}, { "PyYAML", "pyyaml-version",
+			"https://pypi.org/project/PyYAML/",
 			"\0"
 		}, { "Mesa", "mesa-version",
 			"https://gitlab.freedesktop.org/mesa/mesa/-/tags",
@@ -842,9 +895,6 @@ void check_package_versions(void) {
 			"\0"
 		}, { "xauth", "xauth-version",
 			"https://gitlab.freedesktop.org/xorg/app/xauth/-/tags",
-			"\0"
-		}, { "xbacklight", "xbacklight-version",
-			"https://gitlab.freedesktop.org/xorg/app/xbacklight/-/tags",
 			"\0"
 		}, { "xcmsdb", "xcmsdb-version",
 			"https://gitlab.freedesktop.org/xorg/app/xcmsdb/-/tags",
@@ -1017,7 +1067,7 @@ void check_package_versions(void) {
 		}, { "Wine", "wine-version",
 			"https://gitlab.winehq.org/wine/wine/-/tags",
 			"\0"
-		}
+		} 
 	};
 
 	int package_count = sizeof(packages) / sizeof(packages[0]);
