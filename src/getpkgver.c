@@ -441,6 +441,7 @@ void fetch_latest_version_and_changelog(const char* pkg[4], char* latest_version
 		temp_info[499999] = '\0';
 	if (pkg[0] == "p11-kit" ||
 	pkg[0] == "make-ca" ||
+	pkg[0] == "libunwind" ||
 	pkg[0] == "libpsl" ||
 	pkg[0] == "libsndfile" ||
 	pkg[0] == "HarfBuzz" ||
@@ -735,7 +736,7 @@ void check_package_versions(void) {
 			"https://cmake.org/download/",
 			"\0"
 		}, { "libunwind", "libunwind-version",
-			"https://download.savannah.nongnu.org/releases/libunwind/",
+			"https://api.github.com/repos/libunwind/libunwind/releases/latest",
 			"\0"
 		}, { "Nettle", "nettle-version",
 			"https://ftp.gnu.org/gnu/nettle/",
