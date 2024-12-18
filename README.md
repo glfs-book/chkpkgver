@@ -1,3 +1,8 @@
+# NOTICE
+This project is now archived as it is bitrotting, outdated, and is too
+complicated (perhaps insecure as well). A new potential solution may be
+conjured up by the GLFS development team.
+
 # chkpkgver
 Compares and fetches versions of GLFS packages against itself and online
 results.
